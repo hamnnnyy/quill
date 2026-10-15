@@ -29,7 +29,6 @@ assert.ok(ch.includes('item: {\n\t\t\t\t\t\tCount: 1b\n\t\t\t\t\t\tid: "tacz:mod
 assert.ok(ch.includes("match_nbt: true"));
 assert.ok(ch.includes("x: 2.0d") && ch.includes("y: -0.75d"));
 assert.ok(ch.includes('item: "minecraft:iron_ingot"') && ch.includes("count: 4"));
-assert.ok(ch.includes('dependencies: [\n\t\t\t\t"3333333333333333"'));
 assert.ok(!Object.keys(old).some((k) => k.includes("/lang/")));
 
 const neu = questFiles([chapter], "1.21.1", { newBook: false, locale: "ko_kr" });
@@ -55,6 +54,12 @@ const dim = questFiles([{ ...chapter, quests: [{ ...chapter.quests[0], task: { t
 assert.ok(dim["config/ftbquests/quests/chapters/quill_tacz.snbt"].includes('dimension: "minecraft:the_nether"'));
 const bad = questFiles([{ ...chapter, quests: [{ ...chapter.quests[0], task: { type: "kill", entity: "좀비", value: 3 } }] }], "1.20.1", { newBook: false, locale: "ko_kr" });
 assert.ok(bad["config/ftbquests/quests/chapters/quill_tacz.snbt"].includes("match_nbt"), "bad kill task falls back to the item task");
+// deps across chapters survive, deps on deleted quests don't
+const other: Chapter = { ...chapter, id: "4444444444444444", filename: "quill_other", quests: [{ ...chapter.quests[0], id: "3333333333333333", deps: [] }] };
+const cross = questFiles([chapter, other], "1.20.1", { newBook: false, locale: "ko_kr" });
+assert.ok(cross["config/ftbquests/quests/chapters/quill_tacz.snbt"].includes('dependencies: [\n\t\t\t\t"3333333333333333"'));
+const orphan = questFiles([{ ...chapter, quests: [{ ...chapter.quests[0], deps: ["9999999999999999"] }] }], "1.20.1", { newBook: false, locale: "ko_kr" });
+assert.ok(!orphan["config/ftbquests/quests/chapters/quill_tacz.snbt"].includes("dependencies"));
 // round trip: what we write, we can read back
 const back = parseSnbt(ch) as { quests: { x: number; tasks: { item: { id: string; Count: number; tag: { GunId: string } } }[] }[] };
 assert.equal(back.quests[0].x, 2);

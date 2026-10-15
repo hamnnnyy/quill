@@ -55,7 +55,8 @@ function item(id: string, nbt: Record<string, string> | undefined, version: McVe
   return nbt ? { id, Count: b(1), tag: nbt } : id; // ftbquests NBTUtils.write: plain count-1 items become a bare id string
 }
 
-function quest(q: Quest, version: McVersion): V {
+function quest(q: Quest, version: McVersion, known: Set<string>): V {
+  const deps = q.deps.filter((d) => known.has(d)); // a dep on a quest deleted from another chapter
   const legacyText = version === "1.20.1";
   const rewards: V[] = [];
   if (q.xp > 0) rewards.push({ id: newId(), type: "xp", xp: Math.round(q.xp) });
@@ -68,7 +69,7 @@ function quest(q: Quest, version: McVersion): V {
     title: legacyText ? q.title : undefined,
     subtitle: legacyText && q.subtitle ? q.subtitle : undefined,
     description: legacyText && q.description.length ? q.description : undefined,
-    dependencies: q.deps.length ? q.deps : undefined,
+    dependencies: deps.length ? deps : undefined,
     tasks: [
       q.task && validTask(q.task)
         ? { id: newId(), ...q.task, ...(q.task.type === "kill" ? { value: L(Math.max(1, q.task.value)) } : {}) }
@@ -98,6 +99,7 @@ export function questFiles(chapters: Chapter[], version: McVersion, opts: { newB
   // A fresh book needs data.snbt; adding to an existing pack must not overwrite theirs.
   if (opts.newBook) files[root + "data.snbt"] = snbt({ version: 13, default_quest_shape: "", default_reward_team: false }) + "\n";
 
+  const known = new Set(chapters.flatMap((c) => c.quests.map((q) => q.id)));
   chapters.forEach((c, i) => {
     files[`${root}chapters/${c.filename}.snbt`] =
       snbt({
@@ -111,7 +113,7 @@ export function questFiles(chapters: Chapter[], version: McVersion, opts: { newB
         default_quest_shape: "",
         default_hide_dependency_lines: false,
         quest_links: [],
-        quests: c.quests.map((q) => quest(q, version)),
+        quests: c.quests.map((q) => quest(q, version, known)),
       }) + "\n";
     if (!legacyText) {
       lang[`chapter.${c.id}.title`] = c.title;

@@ -391,6 +391,16 @@ export default function Home() {
       apiKey,
     );
   }
+  // Tab order is the order in the quest book (order_index on export).
+  function moveChapter(dir: -1 | 1) {
+    const to = active + dir;
+    edit((all) => {
+      const next = [...all];
+      [next[active], next[to]] = [next[to], next[active]];
+      return next;
+    });
+    setActive(to);
+  }
   const updateChapter = (i: number, c: Chapter) => edit((all) => all.map((x, j) => (j === i ? c : x)));
 
   function download() {
@@ -634,6 +644,16 @@ export default function Home() {
             >
               자동 정렬
             </button>
+            {chapters.length > 1 && (
+              <>
+                <button disabled={active === 0} onClick={() => moveChapter(-1)}>
+                  챕터 앞으로
+                </button>
+                <button disabled={active === chapters.length - 1} onClick={() => moveChapter(1)}>
+                  챕터 뒤로
+                </button>
+              </>
+            )}
           </div>
           {chapters.length > 1 && (
             <div className="tabs" role="tablist">
@@ -652,6 +672,7 @@ export default function Home() {
             addable={addable}
             items={items}
             recipesFor={recipesFor}
+            others={chapters.filter((_, i) => i !== active)}
             onRewrite={(q, ask) => rewrite(chapter, q, ask)}
             onAdd={(k, t) => addQuest(active, k, t)}
           />

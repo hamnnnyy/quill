@@ -19,10 +19,11 @@ type Props = {
   onAdd: (key: string, task?: Task) => void;
   items: { id: string; name: string }[];
   recipesFor: (id: string) => Recipe[];
+  others: Chapter[]; // the other chapters: their quests can be dependencies too
   onRewrite: (q: Quest, ask: string) => Promise<{ title: string; subtitle: string; description: string[] }>;
 };
 
-export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items, recipesFor, onRewrite }: Props) {
+export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items, recipesFor, onRewrite, others }: Props) {
   const [selected, setSelected] = useState<string>();
   const drag = useRef<{ id: string; px: number; py: number; x: number; y: number; moved: boolean; bounds: Bounds }>(null);
   const [frozen, setFrozen] = useState<Bounds>();
@@ -44,6 +45,7 @@ export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items, rec
   const pos = (q: Quest) => ({ left: (q.x - bounds.minX + 1) * S, top: (q.y - bounds.minY + 1) * S });
   const byId = new Map(chapter.quests.map((q) => [q.id, q]));
   const quest = selected ? byId.get(selected) : undefined;
+  const elsewhere = new Map(others.flatMap((c) => c.quests.map((q) => [q.id, `${c.title}: ${q.title}`] as const)));
 
   const update = (id: string, patch: Partial<Quest>) =>
     onChange({ ...chapter, quests: chapter.quests.map((q) => (q.id === id ? { ...q, ...patch } : q)) });
@@ -230,24 +232,30 @@ export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items, rec
             <div>
               <span className="label">먼저 끝내야 하는 퀘스트</span>
               <div className="chips">
-                {quest.deps.map((d) => (
-                  <button key={d} className="chip" onClick={() => update(quest.id, { deps: quest.deps.filter((x) => x !== d) })}>
-                    {byId.get(d)?.title} ✕
-                  </button>
-                ))}
+                {quest.deps
+                  .filter((d) => byId.has(d) || elsewhere.has(d))
+                  .map((d) => (
+                    <button key={d} className="chip" onClick={() => update(quest.id, { deps: quest.deps.filter((x) => x !== d) })}>
+                      {byId.get(d)?.title ?? elsewhere.get(d)} ✕
+                    </button>
+                  ))}
                 <select
                   value=""
                   aria-label="선행 퀘스트 추가"
                   onChange={(e) => e.target.value && update(quest.id, { deps: [...quest.deps, e.target.value] })}
                 >
                   <option value="">+ 추가</option>
-                  {chapter.quests
-                    .filter((q) => q.id !== quest.id && !quest.deps.includes(q.id))
-                    .map((q) => (
-                      <option key={q.id} value={q.id}>
-                        {q.title}
-                      </option>
-                    ))}
+                  {[chapter, ...others].map((c) => (
+                    <optgroup key={c.id} label={c === chapter ? "이 챕터" : c.title}>
+                      {c.quests
+                        .filter((q) => q.id !== quest.id && !quest.deps.includes(q.id))
+                        .map((q) => (
+                          <option key={q.id} value={q.id}>
+                            {q.title}
+                          </option>
+                        ))}
+                    </optgroup>
+                  ))}
                 </select>
               </div>
             </div>
