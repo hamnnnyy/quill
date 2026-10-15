@@ -1,5 +1,6 @@
 import type { KubejsChanges } from "@/app/api/kubejs/route";
 import type { QuestsRequest, QuestsResponse } from "@/app/api/quests/route";
+import type { RewriteRequest, RewriteResponse } from "@/app/api/rewrite/route";
 import { cacheGet, cacheSet, hashKey } from "./cache.ts";
 import { convert } from "./convert.ts";
 import { buildChapter, fallbackPick, type Node, type QuestText } from "./tree.ts";
@@ -143,6 +144,9 @@ function rewardPool(recipes: Recipe[], tree: Map<string, Node>, label: Label) {
       if (!i.id.startsWith("#") && (tree.get(i.id)?.depth ?? 0) <= 1) ids.add(i.id);
   return [...ids].slice(0, 150).map((id) => ({ id, name: label(id) }));
 }
+
+// One quest, fresh text. Not cached: asking again should give something new.
+export const rewriteQuest = (req: RewriteRequest, key: string) => post<RewriteResponse>("/api/rewrite", req, key);
 
 // KubeJS edits. Removals by output/id/mod are read locally (they're one-liners); additions need Gemini.
 const REMOVE = /\.remove\(\s*\{([^}]*)\}\s*\)/g;

@@ -1,4 +1,5 @@
 import { AiError, generate, handle } from "@/lib/gemini";
+import { languageOf, SUBTITLE_RULES } from "@/lib/prompts";
 
 export const maxDuration = 300;
 
@@ -49,7 +50,7 @@ export function POST(req: Request) {
     const r = body as QuestsRequest;
     if (!Array.isArray(r?.candidates) || !r.candidates.length) throw new AiError("퀘스트로 만들 아이템이 없어요.", 400);
     const max = Math.min(Math.max(Number(r.maxQuests) || 20, 3), 80);
-    const language = r.lang === "en" ? "English" : "Korean (casual, friendly 해요체)";
+    const language = languageOf(r.lang);
 
     const prompt = `You design an FTB Quests chapter for the Minecraft mod "${r.mod.name}" in a modpack.
 Pick at most ${max} candidates that make a good progression: stations and machines, key intermediate parts,
@@ -58,10 +59,7 @@ Always include the earliest step players need to start this mod.
 Write like a game, not a manual. Players skim; the first line has to make them want the item.
 For each picked quest write, in ${language}:
 - title: short, names the item or the goal
-- subtitle: one hook line under the title. Make it hit: a boast, a promise, a warning, a line of lore.
-  It may break the polite register: a short fragment or a blunt statement works best.
-  Style reference only, never reuse these lines: anti-materiel rifle "무엇이든 누구든, 한 방이면 충분해" / furnace "불을 다루는 자가 살아남는다"
-  Never just restate the item name or explain the recipe here.
+${SUBTITLE_RULES}
 - description: rotate the voice from quest to quest, never two in a row the same:
   story (a scrap of lore, someone who used it), direct challenge to the player, dry humor, plain field tip.
   Vary the length too: some quests get one line, some three. Not every quest needs a how-to line;

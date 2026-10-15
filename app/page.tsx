@@ -6,10 +6,10 @@ import type { KubejsChanges } from "@/app/api/kubejs/route";
 import { sessionClear, sessionGet, sessionSet } from "@/lib/cache";
 import { emptyExtract, merge, readDump, readJar, recipeIds, type Extract } from "@/lib/jar";
 import { outputVersion, readPack, type PackInfo } from "@/lib/pack";
-import { applyKubejs, chapterForMod, kubejsChanges, normalizeMod } from "@/lib/pipeline";
+import { applyKubejs, chapterForMod, kubejsChanges, normalizeMod, rewriteQuest } from "@/lib/pipeline";
 import { questFiles } from "@/lib/snbt";
 import { buildTree, newId } from "@/lib/tree";
-import type { Chapter, Recipe, Settings } from "@/lib/types";
+import type { Chapter, Quest, Recipe, Settings } from "@/lib/types";
 import { vanillaIcons, vanillaNames } from "@/lib/vanilla";
 import { Activity, MapSkeleton, type ActivityState, type Job } from "./components/Activity";
 import { Hotbar } from "./components/Hotbar";
@@ -352,6 +352,21 @@ export default function Home() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
+  function rewrite(c: Chapter, q: Quest, ask: string) {
+    const mod = modOfChapter(c);
+    const node = mod && trees[mod.id]?.get(q.key);
+    return rewriteQuest(
+      {
+        mod: mod?.name ?? c.title,
+        lang: settings.lang,
+        item: { name: lookup.label(q.key), madeFrom: node?.deps.map(lookup.label) ?? [], station: lookup.label(node?.station ?? "crafting_table") },
+        current: { title: q.title, subtitle: q.subtitle ?? "", description: q.description },
+        chapter: c.quests.filter((x) => x.id !== q.id).map((x) => [x.title, x.subtitle].filter(Boolean).join(": ")),
+        ask,
+      },
+      apiKey,
+    );
+  }
   const updateChapter = (i: number, c: Chapter) => edit((all) => all.map((x, j) => (j === i ? c : x)));
 
   function download() {
@@ -601,6 +616,7 @@ export default function Home() {
             addable={addable}
             items={items}
             recipesFor={recipesFor}
+            onRewrite={(q, ask) => rewrite(chapter, q, ask)}
             onAdd={(k) => addQuest(active, k)}
           />
         </section>

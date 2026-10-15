@@ -147,7 +147,7 @@ textarea { resize: vertical; }
 .check { flex-direction: row; align-items: center; gap: 8px; cursor: pointer; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
 .chips select { width: auto; }
-button.primary, .button-like, .status button, .toolbar button, .danger {
+button.primary, .button-like, .status button, .toolbar button, .rewrite button, .danger {
   align-self: flex-start; padding: 10px 18px; border: 0; background: var(--ink); color: var(--panel); font-weight: 700;
 }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -231,6 +231,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .editor p { margin: 0; }
 .slot-button { display: inline-flex; align-items: center; gap: 10px; padding: 0; background: none; border: 0; color: inherit; font: inherit; cursor: pointer; }
 .slot-button:hover .slot, .slot-button:focus-visible .slot { outline: 2px solid var(--accent); outline-offset: -2px; }
+.rewrite { display: flex; flex-wrap: wrap; gap: 8px; }
+.rewrite input { flex: 1 1 10em; min-width: 0; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
 .field { display: grid; gap: 6px; justify-items: start; }
 .recipe-view { display: grid; gap: 10px; }
@@ -245,8 +247,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 [data-theme="gui"] .slot { box-shadow: inset 2px 2px 0 var(--slot-lo), inset -2px -2px 0 var(--slot-hi); }
 [data-theme="gui"] h1 { text-shadow: 4px 4px 0 #3f3f3f; }
 [data-theme="gui"] .xp { box-shadow: inset 2px 2px 0 var(--slot-lo); background: #1d1d1d; }
-[data-theme="gui"] :is(button.primary, .button-like, .status button, .toolbar button, .tabs button):hover { background: #7e86c4; color: #fff; }
-[data-theme="gui"] :is(button.primary, .button-like, .status button, .toolbar button) {
+[data-theme="gui"] :is(button.primary, .button-like, .status button, .toolbar button, .rewrite button, .tabs button):hover { background: #7e86c4; color: #fff; }
+[data-theme="gui"] :is(button.primary, .button-like, .status button, .toolbar button, .rewrite button) {
   background: #6f6f6f; color: #fff; border: 2px solid #000; box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #444; text-shadow: 1px 1px 0 #3f3f3f;
 }
 [data-theme="gui"] :is(input:not([type]), input[type="number"], input[type="password"], select, textarea) {
@@ -263,7 +265,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 [data-theme="quest"] .slot.big { box-shadow: 0 0 0 3px var(--accent); }
 [data-theme="quest"] .grid { gap: 8px; padding: 2px; }
 [data-theme="quest"] .arrow { width: 32px; height: 2px; clip-path: none; background: var(--slot-hi); }
-[data-theme="quest"] :is(button.primary, .button-like, .status button, .toolbar button) { background: var(--accent); color: #11131a; border-radius: 6px; }
+[data-theme="quest"] :is(button.primary, .button-like, .status button, .toolbar button, .rewrite button) { background: var(--accent); color: #11131a; border-radius: 6px; }
 [data-theme="quest"] :is(input:not([type]), input[type="number"], input[type="password"], select, textarea, .chip) { border-radius: 6px; border: 1px solid var(--slot-hi); }
 [data-theme="quest"] .tabs button { border-radius: 6px; }
 [data-theme="quest"] .map { background: var(--page-pattern), #0d0f14; }
@@ -306,11 +308,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 [data-theme="book"] .step { color: var(--ink); }
 [data-theme="book"] .slot { background: var(--slot); box-shadow: inset 1px 1px 0 var(--slot-hi), inset -1px -1px 0 #fff8; }
 [data-theme="book"] .slot.big { box-shadow: 0 0 0 2px var(--accent); }
-[data-theme="book"] :is(button.primary, .button-like, .status button, .toolbar button, .tabs button) {
+[data-theme="book"] :is(button.primary, .button-like, .status button, .toolbar button, .rewrite button, .tabs button) {
   background: #6f6f6f; color: #fff; border: 2px solid #000; border-radius: 0;
   box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #444; text-shadow: 1px 1px 0 #3f3f3f;
 }
-[data-theme="book"] :is(button.primary, .button-like, .status button, .toolbar button, .tabs button):hover { background: #7e86c4; }
+[data-theme="book"] :is(button.primary, .button-like, .status button, .toolbar button, .rewrite button, .tabs button):hover { background: #7e86c4; }
 [data-theme="book"] .tabs button[aria-selected="true"] { background: #a0a0a0; }
 [data-theme="book"] :is(input:not([type]), input[type="number"], input[type="password"], select, textarea) {
   background: transparent; border: 0; border-bottom: 2px solid var(--slot-hi); padding-inline: 0;

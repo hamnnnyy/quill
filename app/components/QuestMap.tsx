@@ -17,13 +17,25 @@ type Props = {
   onAdd: (key: string) => void;
   items: { id: string; name: string }[];
   recipesFor: (id: string) => Recipe[];
+  onRewrite: (q: Quest, ask: string) => Promise<{ title: string; subtitle: string; description: string[] }>;
 };
 
-export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items, recipesFor }: Props) {
+export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items, recipesFor, onRewrite }: Props) {
   const [selected, setSelected] = useState<string>();
   const drag = useRef<{ id: string; px: number; py: number; x: number; y: number; moved: boolean; bounds: Bounds }>(null);
   const [frozen, setFrozen] = useState<Bounds>();
   // Recipe view in the editor: trail of items opened from the quest's item, down through ingredients.
+  const [ai, setAi] = useState<{ ask: string; busy?: boolean; error?: string }>({ ask: "" });
+  async function rewrite(q: Quest) {
+    setAi({ ...ai, busy: true, error: undefined });
+    try {
+      const t = await onRewrite(q, ai.ask);
+      update(q.id, { title: t.title || q.title, subtitle: t.subtitle || undefined, description: t.description });
+      setAi({ ask: ai.ask });
+    } catch (e) {
+      setAi({ ask: ai.ask, error: (e as Error).message });
+    }
+  }
   const [trail, setTrail] = useState<{ quest: string; ids: string[] }>();
 
   const bounds = frozen ?? boundsOf(chapter.quests);
@@ -129,6 +141,19 @@ export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items, rec
                 onTrail={(ids) => setTrail({ quest: quest.id, ids })}
               />
             )}
+            <div className="rewrite">
+              <input
+                value={ai.ask}
+                placeholder="AI에게 부탁 (선택): 더 웃기게, 짧게…"
+                aria-label="AI에게 부탁할 것"
+                onChange={(e) => setAi({ ...ai, ask: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && !ai.busy && rewrite(quest)}
+              />
+              <button onClick={() => rewrite(quest)} disabled={ai.busy}>
+                {ai.busy ? "쓰는 중…" : "AI로 다시 쓰기"}
+              </button>
+              {ai.error && <span className="warn">{ai.error}</span>}
+            </div>
             <label>
               <span className="label">제목</span>
               <input value={quest.title} onChange={(e) => update(quest.id, { title: e.target.value })} />
