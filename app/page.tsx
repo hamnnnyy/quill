@@ -1,7 +1,7 @@
 "use client";
 
 import { zipSync, strToU8 } from "fflate";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { KubejsChanges } from "@/app/api/kubejs/route";
 import { sessionClear, sessionGet, sessionSet } from "@/lib/cache";
 import { emptyExtract, merge, readDump, readJar, recipeIds, type Extract } from "@/lib/jar";
@@ -70,7 +70,8 @@ export default function Home() {
     (async () => {
       const input = await sessionGet<Input>("input");
       const work = await sessionGet<Work>("work");
-      if (input?.extract.mods.length) {
+      const stale = input && [...input.extract.icons.values()].some((u) => u.startsWith("blob:")); // saved before icons were data URLs
+      if (input?.extract.mods.length && !stale) {
         setExtract(input.extract);
         setBaseRecipes(input.baseRecipes);
         setKubejs(input.kubejs);
@@ -262,6 +263,7 @@ export default function Home() {
       chosen.map((m) => ({ id: m.id, name: m.name })),
     );
     setChapters([]);
+    history.current = { past: [], future: [], last: 0 };
     const made: Chapter[] = [];
     const plain: string[] = [];
     let error = "";
@@ -316,7 +318,41 @@ export default function Home() {
     };
     updateChapter(chapterIndex, { ...c, quests: [...c.quests, quest] });
   }
-  const updateChapter = (i: number, c: Chapter) => setChapters((all) => all.map((x, j) => (j === i ? c : x)));
+  // Undo history for edits. Edits less than 600ms apart (a drag, typing) count as one step.
+  const history = useRef({ past: [] as Chapter[][], future: [] as Chapter[][], last: 0 });
+  const [, setHistoryTick] = useState(0);
+  function edit(fn: (all: Chapter[]) => Chapter[]) {
+    const h = history.current;
+    const now = Date.now();
+    if (now - h.last > 600) {
+      h.past = [...h.past.slice(-99), chapters];
+      h.future = [];
+    }
+    h.last = now;
+    setChapters(fn);
+    setHistoryTick((n) => n + 1);
+  }
+  function undo(redo = false) {
+    const h = history.current;
+    const [from, to] = redo ? [h.future, h.past] : [h.past, h.future];
+    const prev = from.pop();
+    if (!prev) return;
+    to.push(chapters);
+    h.last = 0;
+    setChapters(prev);
+    setHistoryTick((n) => n + 1);
+  }
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const typing = e.target instanceof Element && e.target.closest("input, textarea, select, [contenteditable]");
+      if (typing || !(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== "z") return;
+      e.preventDefault();
+      undo(e.shiftKey);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+  const updateChapter = (i: number, c: Chapter) => edit((all) => all.map((x, j) => (j === i ? c : x)));
 
   function download() {
     const files = questFiles(chapters, settings.version, { newBook, locale: settings.lang === "ko" ? "ko_kr" : "en_us" });
@@ -540,6 +576,14 @@ export default function Home() {
       {chapter && (
         <section aria-labelledby="s4">
           <h2 id="s4" className="step">4. 다듬기</h2>
+          <div className="toolbar">
+            <button onClick={() => undo()} disabled={!history.current.past.length} title="Ctrl+Z">
+              되돌리기
+            </button>
+            <button onClick={() => undo(true)} disabled={!history.current.future.length} title="Ctrl+Shift+Z">
+              다시 하기
+            </button>
+          </div>
           {chapters.length > 1 && (
             <div className="tabs" role="tablist">
               {chapters.map((c, i) => (

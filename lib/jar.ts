@@ -61,6 +61,13 @@ function modMeta(files: Record<string, Uint8Array>, fallback: string) {
 }
 
 // Reads only recipe, lang, metadata and icon files; models, sounds and classes are never inflated.
+// Data URLs, not blob: URLs: they survive being saved to IndexedDB and restored after a reload.
+function pngDataUrl(bytes: Uint8Array) {
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return `data:image/png;base64,${btoa(s)}`;
+}
+
 export function readJar(bytes: Uint8Array, fileName: string): Extract {
   const files = unzipSync(bytes, {
     filter: (f) => RECIPE.test(f.name) || LANG.test(f.name) || ICON.test(f.name) || META.test(f.name),
@@ -75,7 +82,7 @@ export function readJar(bytes: Uint8Array, fileName: string): Extract {
       const key = `${icon[1]}:${icon[3]}`;
       const rank = ICON_RANK[icon[2]] ?? 1;
       if ((icons.get(key)?.rank ?? 9) > rank)
-        icons.set(key, { url: URL.createObjectURL(new Blob([data as BlobPart], { type: "image/png" })), rank });
+        icons.set(key, { url: pngDataUrl(data), rank });
       continue;
     }
     if (!RECIPE.test(name) && !LANG.test(name)) continue;
