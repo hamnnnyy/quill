@@ -61,4 +61,16 @@ assert.equal(painting?.result, "minecraft:painting");
 
 assert.equal(convert({ type: "create:mixing", ingredients: [], results: [] }, "e"), null);
 assert.equal(convert({ type: "minecraft:crafting_shapeless", ingredients: [{ type: "forge:nbt" }], result: "x" }, "f"), null);
+// Create processing: main output only, fluids dropped, machine as station
+const crush = convert({ type: "create:crushing", ingredients: [{ tag: "forge:raw_materials/iron" }], results: [{ item: "create:crushed_raw_iron" }, { chance: 0.75, item: "create:experience_nugget" }] }, "c")!;
+assert.equal(crush.result, "create:crushed_raw_iron");
+assert.equal(crush.station, "create:crushing_wheel");
+assert.deepEqual(crush.ingredients, [{ id: "#forge:raw_materials/iron", count: 1 }]);
+const fill = convert({ type: "create:filling", ingredients: [{ item: "create:blaze_cake_base" }, { amount: 250, fluid: "minecraft:lava", nbt: {} }], results: [{ item: "create:blaze_cake" }] }, "f")!;
+assert.deepEqual(fill.ingredients, [{ id: "create:blaze_cake_base", count: 1 }]);
+const mix = convert({ type: "create:mixing", ingredients: [{ tag: "forge:ingots/copper" }, { tag: "forge:ingots/zinc" }], results: [{ count: 2, item: "create:brass_ingot" }] }, "m")!;
+assert.equal(mix.result_count, 2);
+const mc = convert({ type: "create:mechanical_crafting", key: { A: { item: "create:andesite_alloy" } }, pattern: ["AA", "AA"], result: { count: 2, item: "create:crushing_wheel" } }, "mc")!;
+assert.equal(mc.station, "create:mechanical_crafter");
+assert.equal(convert({ type: "create:sequenced_assembly", ingredient: { item: "x" }, results: [] }, "s"), null); // left to AI
 console.log("convert ok");

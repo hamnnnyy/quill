@@ -3,6 +3,7 @@
 import { zipSync, strToU8 } from "fflate";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KubejsChanges } from "@/app/api/kubejs/route";
+import { conditionsMet } from "@/lib/conditions";
 import { sessionClear, sessionGet, sessionSet } from "@/lib/cache";
 import { emptyExtract, merge, readDump, readJar, recipeIds, type Extract } from "@/lib/jar";
 import { outputVersion, readPack, type PackInfo } from "@/lib/pack";
@@ -201,7 +202,12 @@ export default function Home() {
     }
     (await icons).forEach((v, k) => all.icons.has(k) || all.icons.set(k, v)); // mod textures win over vanilla
     (await names).forEach((v, k) => all.names.has(k) || all.names.set(k, v));
-    all.mods = all.mods.filter((m) => m.recipes.length);
+    // Drop recipes for mods that aren't here (Create's uranium crushing needs IC2 or Mekanism, ...).
+    const loaded = new Set(all.mods.map((m) => m.id)); // from mods.toml; lang files name other mods' items too
+    const itemIds = new Set([...all.known, ...all.names.keys()]);
+    all.mods = all.mods
+      .map((m) => ({ ...m, recipes: m.recipes.filter((r) => conditionsMet(r.json, loaded, itemIds)) }))
+      .filter((m) => m.recipes.length);
 
     // What the pack already has decides the defaults: its Minecraft version, and adding to its quest book.
     const version = info.existing?.version ?? outputVersion(info.mcVersion);

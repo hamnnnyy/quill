@@ -46,6 +46,24 @@ const TACZ: Record<string, { item: string; key: string }> = {
   attachment: { item: "tacz:attachment", key: "AttachmentId" },
 };
 
+// Create's processing recipes share one shape: ingredients[] in, results[] out, a machine does the work.
+// Verified against create-1.20.1-6.0.8 data. Addons that reuse create:* types get the same treatment.
+const CREATE: Record<string, string> = {
+  milling: "create:millstone",
+  crushing: "create:crushing_wheel",
+  pressing: "create:mechanical_press",
+  compacting: "create:mechanical_press",
+  mixing: "create:mechanical_mixer",
+  deploying: "create:deployer",
+  item_application: "create:deployer",
+  splashing: "create:encased_fan",
+  haunting: "create:encased_fan",
+  cutting: "create:mechanical_saw",
+  filling: "create:spout",
+  emptying: "create:item_drain",
+  sandpaper_polishing: "create:sand_paper",
+};
+
 export function convert(json: unknown, source: string): Recipe | null {
   if (!isObj(json) || typeof json.type !== "string") return null;
   const type = json.type.replace(/^minecraft:/, "");
@@ -77,6 +95,22 @@ export function convert(json: unknown, source: string): Recipe | null {
     const ings = tally([json.template, json.base, json.addition].map(ingredient));
     const out = result(json.result);
     return ings && out ? { ...base, result: out.id, result_count: out.count, station: "smithing_table", ingredients: ings } : null;
+  }
+  const create = json.type.match(/^create:(\w+)$/)?.[1];
+  if (create === "mechanical_crafting" && Array.isArray(json.pattern) && isObj(json.key)) {
+    const key = json.key;
+    const cells = (json.pattern as string[]).join("").split("").filter((c) => c !== " ");
+    const ings = tally(cells.map((c) => ingredient(key[c])));
+    const out = result(json.result);
+    return ings && out ? { ...base, result: out.id, result_count: out.count, station: "create:mechanical_crafter", ingredients: ings } : null;
+  }
+  if (create && CREATE[create] && Array.isArray(json.ingredients) && Array.isArray(json.results)) {
+    const items = json.ingredients.filter((i) => !(isObj(i) && "fluid" in i)); // fluids aren't items a quest can ask for
+    const ings = tally(items.map(ingredient));
+    // the guaranteed output; chance < 1 extras (experience nuggets, byproducts) aren't what the recipe is for
+    const main = json.results.find((r) => !isObj(r) || typeof r.chance !== "number" || r.chance >= 1);
+    const out = result(main);
+    return ings?.length && out ? { ...base, result: out.id, result_count: out.count, station: CREATE[create], ingredients: ings } : null;
   }
   if (json.type === "tacz:gun_smith_table_crafting" && Array.isArray(json.materials) && isObj(json.result)) {
     const r = json.result;

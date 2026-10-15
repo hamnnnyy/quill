@@ -24,7 +24,7 @@ async function post<T>(path: string, body: unknown, key: string, onRetry?: OnRet
     });
     const data = await res.json();
     if (res.ok) return data;
-    if (res.status === 401 || res.status === 400 || res.status === 413) throw new FatalAiError(data.error);
+    if ([400, 401, 402, 413].includes(res.status)) throw new FatalAiError(data.error); // 402: daily quota gone
     if (attempt > RETRIES) throw new Error(data.error);
     onRetry?.(15_000 * attempt, data.error);
     await new Promise((r) => setTimeout(r, 15_000 * attempt)); // rate limit window is per minute

@@ -33,6 +33,15 @@ export async function generate(key: string, req: Omit<GenerateContentParameters,
     }
   }
   const status = (last as { status?: number }).status;
+  const message = String((last as { message?: string }).message ?? "");
+  // The free tier's per-day cap (20 requests per model): retrying in 15s can't help, so say so and stop.
+  if (status === 429 && message.includes("PerDay")) {
+    const hours = message.match(/retry in (\d+)h/)?.[1];
+    throw new AiError(
+      `오늘 쓸 수 있는 AI 횟수를 다 썼어요${hours ? ` (약 ${hours}시간 뒤 다시 채워져요)` : ""}. 무료 키는 모델마다 하루 20번이에요. 결제를 켠 키를 쓰거나 AI 없이 만들 수 있어요.`,
+      402,
+    );
+  }
   if (status === 429) throw new AiError("AI 사용 한도를 넘었어요. 잠시 후 다시 시도하세요.", 429);
   if (status === 503) throw new AiError("AI 서버가 붐벼요. 잠시 후 다시 시도하세요.", 503);
   if (status === 400 || status === 403) throw new AiError("Gemini API 키가 맞지 않아요. 설정에서 키를 확인하세요.", 401);

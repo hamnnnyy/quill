@@ -1,7 +1,9 @@
 import { unzipSync, strFromU8 } from "fflate";
 import type { Mod, RawRecipe, Recipe } from "./types";
 
-const RECIPE = /\/recipes?\/.*\.json$/;
+// data/<ns>/recipes/, also nested (TACZ gun packs live in assets/tacz/custom/<pack>/data/...),
+// but not data/<ns>/advancements/recipes/, which only unlock recipes
+const RECIPE = /(^|\/)data\/[^/]+\/recipes?\/.*\.json$/;
 const LANG = /\/lang\/(en_us|ko_kr)\.json$/;
 const META = /^META-INF\/(neoforge\.)?mods\.toml$|^fabric\.mod\.json$/;
 // Inventory icons: textures/item, textures/block, and data-driven "slot" icons (TACZ guns live in textures/gun/slot).
