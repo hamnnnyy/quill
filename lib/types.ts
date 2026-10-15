@@ -24,6 +24,7 @@ export type Quest = {
   nbt?: Record<string, string>;
   count: number;
   title: string;
+  subtitle?: string; // one-line hook under the title
   description: string[];
   x: number;
   y: number;

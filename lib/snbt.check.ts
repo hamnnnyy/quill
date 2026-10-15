@@ -14,7 +14,7 @@ const chapter: Chapter = {
   quests: [
     {
       id: "2222222222222222", key: "tacz:ak47", item: "tacz:modern_kinetic_gun", nbt: { GunId: "tacz:ak47" },
-      count: 1, title: "AKM", description: ["첫 소총"], x: 2, y: -0.75, deps: ["3333333333333333"], xp: 50,
+      count: 1, title: "AKM", subtitle: "한 방이면 충분해", description: ["첫 소총"], x: 2, y: -0.75, deps: ["3333333333333333"], xp: 50,
       rewardItem: "minecraft:iron_ingot", rewardCount: 4,
     },
   ],
@@ -24,6 +24,7 @@ const old = questFiles([chapter], "1.20.1", { newBook: true, locale: "ko_kr" });
 const ch = old["config/ftbquests/quests/chapters/quill_tacz.snbt"];
 assert.ok(old["config/ftbquests/quests/data.snbt"].includes("version: 13"));
 assert.ok(ch.includes('title: "AKM"'));
+assert.ok(ch.includes('subtitle: "한 방이면 충분해"'));
 assert.ok(ch.includes('item: {\n\t\t\t\t\t\tCount: 1b\n\t\t\t\t\t\tid: "tacz:modern_kinetic_gun"\n\t\t\t\t\t\ttag: {\n\t\t\t\t\t\t\tGunId: "tacz:ak47"'));
 assert.ok(ch.includes("match_nbt: true"));
 assert.ok(ch.includes("x: 2.0d") && ch.includes("y: -0.75d"));
@@ -38,8 +39,13 @@ assert.ok(!ch2.includes("AKM"), "1.21 keeps text out of chapter files");
 assert.ok(ch2.includes('"minecraft:custom_data": {') && ch2.includes('match_components: "strict"'));
 const lang = neu["config/ftbquests/quests/lang/ko_kr.snbt"];
 assert.ok(lang.includes('quest.2222222222222222.title: "AKM"'));
+assert.ok(lang.includes('quest.2222222222222222.quest_subtitle: "한 방이면 충분해"'));
 assert.ok(lang.includes('quest.2222222222222222.quest_desc: [\n\t\t"첫 소총"'));
 assert.equal(neu["config/ftbquests/quests/lang/en_us.snbt"], lang);
+// a hand-typed reward that isn't an item id is dropped, the xp reward stays
+const typo = questFiles([{ ...chapter, quests: [{ ...chapter.quests[0], rewardItem: "다이아몬드" }] }], "1.20.1", { newBook: false, locale: "ko_kr" });
+const typoCh = typo["config/ftbquests/quests/chapters/quill_tacz.snbt"];
+assert.ok(!typoCh.includes("다이아몬드") && typoCh.includes('type: "xp"'));
 // round trip: what we write, we can read back
 const back = parseSnbt(ch) as { quests: { x: number; tasks: { item: { id: string; Count: number; tag: { GunId: string } } }[] }[] };
 assert.equal(back.quests[0].x, 2);

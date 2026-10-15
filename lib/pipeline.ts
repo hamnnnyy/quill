@@ -109,11 +109,12 @@ export async function chapterForMod(
   };
 
   try {
-    const out = await cached(["quests-v1", request], () => post<QuestsResponse>("/api/quests", request, key, onRetry));
+    const out = await cached(["quests-v2", request], () => post<QuestsResponse>("/api/quests", request, key, onRetry));
     if (!out.quests.length) throw new Error("AI가 고른 퀘스트가 없어요.");
     const texts: QuestText[] = out.quests.map((q) => ({
       key: q.key,
       title: q.title,
+      subtitle: q.subtitle,
       description: q.description,
       xp: q.xp,
       rewardItem: q.reward_item || undefined,

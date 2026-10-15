@@ -84,6 +84,8 @@ export default function Home() {
     () => ({ label: (id) => extract.names.get(withNs(id)) ?? fallbackName(id), icons: extract.icons, invented }),
     [extract, invented],
   );
+  // Every item Quill knows a name for (mods + vanilla): what a hand-picked reward can be.
+  const items = useMemo(() => [...extract.names].map(([id, name]) => ({ id, name })), [extract]);
   const trees = useMemo(() => Object.fromEntries(Object.entries(recipes).map(([m, r]) => [m, buildTree(r)])), [recipes]);
   const mods = useMemo(() => {
     const list = [...extract.mods];
@@ -519,6 +521,7 @@ export default function Home() {
             lookup={lookup}
             onChange={(c) => updateChapter(active, c)}
             addable={addable}
+            items={items}
             onAdd={(k) => addQuest(active, k)}
           />
         </section>

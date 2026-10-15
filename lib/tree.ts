@@ -105,7 +105,7 @@ export function layout(quests: Quest[], tree: Map<string, Node>) {
   }
 }
 
-export type QuestText = { key: string; title: string; description: string[]; xp: number; rewardItem?: string; rewardCount?: number };
+export type QuestText = { key: string; title: string; subtitle?: string; description: string[]; xp: number; rewardItem?: string; rewardCount?: number };
 
 export function buildChapter(
   mod: { id: string; name: string },
@@ -124,6 +124,7 @@ export function buildChapter(
       nbt: n.nbt,
       count: 1,
       title: t.title,
+      subtitle: t.subtitle,
       description: t.description,
       x: 0,
       y: 0,

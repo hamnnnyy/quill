@@ -229,7 +229,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .node.selected .slot { outline: 3px solid var(--accent); outline-offset: 1px; }
 .editor { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 16px; }
 .editor p { margin: 0; }
-.reward { display: flex; align-items: center; gap: 10px; }
+.reward { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.reward > label:first-child { flex: 1 1 12em; }
+.reward-count { width: 5em; }
+.warn { color: var(--bad); font-size: 0.85em; flex-basis: 100%; }
 
 /* ---- gui: bevelled grey window, sunken slots ---- */
 [data-theme="gui"] .panel { border: 2px solid #000; box-shadow: inset 3px 3px 0 var(--panel-hi), inset -3px -3px 0 var(--panel-lo); }

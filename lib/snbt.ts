@@ -37,6 +37,9 @@ export function snbt(v: V, indent = ""): string {
   return `{\n${entries.map(([k, x]) => `${inner}${keyOf(k)}: ${snbt(x, inner)}`).join("\n")}\n${indent}}`;
 }
 
+// namespace:path; a hand-typed reward that isn't one is left out instead of breaking the quest file
+export const ITEM_ID = /^[a-z0-9_.-]+:[a-z0-9_./-]+$/;
+
 function item(id: string, nbt: Record<string, string> | undefined, version: McVersion): V {
   if (version === "1.21.1") return nbt ? { id, count: 1, components: { "minecraft:custom_data": nbt } } : { id, count: 1 };
   return nbt ? { id, Count: b(1), tag: nbt } : id; // ftbquests NBTUtils.write: plain count-1 items become a bare id string
@@ -46,13 +49,14 @@ function quest(q: Quest, version: McVersion): V {
   const legacyText = version === "1.20.1";
   const rewards: V[] = [];
   if (q.xp > 0) rewards.push({ id: newId(), type: "xp", xp: Math.round(q.xp) });
-  if (q.rewardItem)
+  if (q.rewardItem && ITEM_ID.test(q.rewardItem))
     rewards.push({ id: newId(), type: "item", item: item(q.rewardItem, undefined, version), count: q.rewardCount && q.rewardCount > 1 ? q.rewardCount : undefined });
   return {
     id: q.id,
     x: d(q.x),
     y: d(q.y),
     title: legacyText ? q.title : undefined,
+    subtitle: legacyText && q.subtitle ? q.subtitle : undefined,
     description: legacyText && q.description.length ? q.description : undefined,
     dependencies: q.deps.length ? q.deps : undefined,
     tasks: [
@@ -102,6 +106,7 @@ export function questFiles(chapters: Chapter[], version: McVersion, opts: { newB
       if (c.subtitle) lang[`chapter.${c.id}.chapter_subtitle`] = [c.subtitle];
       for (const q of c.quests) {
         lang[`quest.${q.id}.title`] = q.title;
+        if (q.subtitle) lang[`quest.${q.id}.quest_subtitle`] = q.subtitle;
         if (q.description.length) lang[`quest.${q.id}.quest_desc`] = q.description;
       }
     }

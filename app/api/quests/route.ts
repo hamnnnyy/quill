@@ -14,7 +14,7 @@ export type QuestsRequest = {
 export type QuestsResponse = {
   chapter_title: string;
   chapter_subtitle: string;
-  quests: { key: string; title: string; description: string[]; xp: number; reward_item: string; reward_count: number }[];
+  quests: { key: string; title: string; subtitle: string; description: string[]; xp: number; reward_item: string; reward_count: number }[];
 };
 
 const schema = {
@@ -29,12 +29,13 @@ const schema = {
         properties: {
           key: { type: "string", description: "a candidate key, copied exactly" },
           title: { type: "string" },
+          subtitle: { type: "string", description: "one punchy hook line, not an explanation" },
           description: { type: "array", items: { type: "string" }, description: "1-3 short lines" },
           xp: { type: "integer" },
           reward_item: { type: "string", description: "an id from reward_pool, or empty" },
           reward_count: { type: "integer" },
         },
-        required: ["key", "title", "description", "xp", "reward_item", "reward_count"],
+        required: ["key", "title", "subtitle", "description", "xp", "reward_item", "reward_count"],
       },
     },
   },
@@ -54,12 +55,21 @@ export function POST(req: Request) {
 Pick at most ${max} candidates that make a good progression: stations and machines, key intermediate parts,
 and the items players actually want. Skip trivial variants (slabs, stairs, colors, every attachment of one kind).
 Always include the earliest step players need to start this mod.
+Write like a game, not a manual. Players skim; the first line has to make them want the item.
 For each picked quest write, in ${language}:
 - title: short, names the item or the goal
-- description: 1-3 short lines on what it is for and how to make it (mention the station when it matters)
+- subtitle: one hook line under the title. Make it hit: a boast, a promise, a warning, a line of lore.
+  It may break the polite register: a short fragment or a blunt statement works best.
+  Style reference only, never reuse these lines: anti-materiel rifle "무엇이든 누구든, 한 방이면 충분해" / furnace "불을 다루는 자가 살아남는다"
+  Never just restate the item name or explain the recipe here.
+- description: rotate the voice from quest to quest, never two in a row the same:
+  story (a scrap of lore, someone who used it), direct challenge to the player, dry humor, plain field tip.
+  Vary the length too: some quests get one line, some three. Not every quest needs a how-to line;
+  when there is one, keep it short and last.
+  Keep a thread through the chapter: early quests feel like a beginning, the deepest ones like a payoff.
 - xp: ${XP[r.reward] ?? XP.normal}, more for deeper items
 - reward_item/reward_count: optionally a useful material from reward_pool for the next step, else "" and 0
-Also write chapter_title and chapter_subtitle in ${language}.
+Also write chapter_title and chapter_subtitle in ${language}; the subtitle sets the chapter's story in one line.
 Copy keys exactly. Never invent keys or reward ids.
 
 candidates (depth = crafting steps from raw materials):

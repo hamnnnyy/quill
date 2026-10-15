@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import type { Chapter, Quest } from "@/lib/types";
 import { Slot, type Lookup } from "./Slot";
+import { ITEM_ID } from "@/lib/snbt";
 
 const S = 64; // px per FTB quest unit
 const SNAP = 0.5;
@@ -13,9 +14,10 @@ type Props = {
   onChange: (c: Chapter) => void;
   addable: { key: string; label: string }[];
   onAdd: (key: string) => void;
+  items: { id: string; name: string }[];
 };
 
-export function QuestMap({ chapter, lookup, onChange, addable, onAdd }: Props) {
+export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items }: Props) {
   const [selected, setSelected] = useState<string>();
   const drag = useRef<{ id: string; px: number; py: number; x: number; y: number; moved: boolean; bounds: Bounds }>(null);
   const [frozen, setFrozen] = useState<Bounds>();
@@ -109,6 +111,10 @@ export function QuestMap({ chapter, lookup, onChange, addable, onAdd }: Props) {
               <input value={quest.title} onChange={(e) => update(quest.id, { title: e.target.value })} />
             </label>
             <label>
+              <span className="label">한 줄 소개 (제목 아래에 보여요)</span>
+              <input value={quest.subtitle ?? ""} onChange={(e) => update(quest.id, { subtitle: e.target.value || undefined })} />
+            </label>
+            <label>
               <span className="label">설명 (줄마다 한 문단)</span>
               <textarea
                 rows={4}
@@ -126,15 +132,44 @@ export function QuestMap({ chapter, lookup, onChange, addable, onAdd }: Props) {
                 <input type="number" min={0} value={quest.xp} onChange={(e) => update(quest.id, { xp: Math.max(0, +e.target.value) })} />
               </label>
             </div>
-            {quest.rewardItem && (
-              <div className="reward">
+            <div className="reward">
+              <label>
                 <span className="label">아이템 보상</span>
-                <Slot id={quest.rewardItem} count={quest.rewardCount} lookup={lookup} />
-                <button className="link" onClick={() => update(quest.id, { rewardItem: undefined, rewardCount: undefined })}>
-                  빼기
-                </button>
-              </div>
-            )}
+                <input
+                  list="quill-items"
+                  placeholder="없음 (이름이나 minecraft:diamond)"
+                  value={quest.rewardItem ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value.trim();
+                    update(quest.id, { rewardItem: v || undefined, rewardCount: v ? quest.rewardCount ?? 1 : undefined });
+                  }}
+                />
+              </label>
+              {quest.rewardItem && (
+                <>
+                  <label className="reward-count">
+                    <span className="label">개수</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={64}
+                      value={quest.rewardCount ?? 1}
+                      onChange={(e) => update(quest.id, { rewardCount: Math.min(64, Math.max(1, +e.target.value)) })}
+                    />
+                  </label>
+                  {ITEM_ID.test(quest.rewardItem) ? (
+                    <Slot id={quest.rewardItem} count={quest.rewardCount} lookup={lookup} />
+                  ) : (
+                    <span className="warn">목록에서 고르거나 모드id:아이템 형식으로 써 주세요. 이대로면 보상에서 빠져요.</span>
+                  )}
+                </>
+              )}
+            </div>
+            <datalist id="quill-items">
+              {items.map((i) => (
+                <option key={i.id} value={i.id} label={i.name} />
+              ))}
+            </datalist>
             <div>
               <span className="label">먼저 끝내야 하는 퀘스트</span>
               <div className="chips">
