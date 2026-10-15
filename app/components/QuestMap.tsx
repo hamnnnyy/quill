@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { Chapter, Quest, Recipe } from "@/lib/types";
+import { parseMc } from "@/lib/mctext";
 import { RecipeCard } from "./Recipe";
 import { Slot, type Lookup } from "./Slot";
 import { ITEM_ID } from "@/lib/snbt";
@@ -163,13 +164,17 @@ export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items, rec
               <input value={quest.subtitle ?? ""} onChange={(e) => update(quest.id, { subtitle: e.target.value || undefined })} />
             </label>
             <label>
-              <span className="label">설명 (줄마다 한 문단)</span>
+              <span className="label">설명 (줄마다 한 문단, &amp;6 색 &amp;l 굵게 &amp;r 원래대로)</span>
               <textarea
                 rows={4}
                 value={quest.description.join("\n")}
                 onChange={(e) => update(quest.id, { description: e.target.value.split("\n") })}
               />
             </label>
+            <details className="preview-box" open>
+              <summary className="label">게임에서 보이는 모습</summary>
+              <QuestPreview quest={quest} lookup={lookup} />
+            </details>
             <div className="row">
               <label>
                 <span className="label">필요 개수</span>
@@ -273,6 +278,54 @@ export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items, rec
           </>
         )}
       </aside>
+    </div>
+  );
+}
+
+function McText({ text }: { text: string }) {
+  return (
+    <>
+      {parseMc(text).map((r, i) => (
+        <span
+          key={i}
+          style={{
+            color: r.color,
+            fontWeight: r.bold ? 700 : undefined,
+            fontStyle: r.italic ? "italic" : undefined,
+            textDecoration: [r.underline && "underline", r.strike && "line-through"].filter(Boolean).join(" ") || undefined,
+          }}
+        >
+          {r.text}
+        </span>
+      ))}
+    </>
+  );
+}
+
+// Roughly the FTB Quests quest screen: title, subtitle, description, then task and rewards.
+function QuestPreview({ quest, lookup }: { quest: Quest; lookup: Lookup }) {
+  return (
+    <div className="mc-preview">
+      <p className="mc-title">
+        <McText text={quest.title} />
+      </p>
+      {quest.subtitle && (
+        <p className="mc-sub">
+          <McText text={quest.subtitle} />
+        </p>
+      )}
+      <div className="mc-desc">
+        {quest.description.map((l, i) => (
+          <p key={i}>{l ? <McText text={l} /> : "\u00a0"}</p>
+        ))}
+      </div>
+      <div className="mc-row">
+        <span>과제</span>
+        <Slot id={quest.key} count={quest.count} lookup={lookup} />
+        <span>보상</span>
+        {quest.xp > 0 && <span className="mc-xp">+{Math.round(quest.xp)} XP</span>}
+        {quest.rewardItem && <Slot id={quest.rewardItem} count={quest.rewardCount} lookup={lookup} />}
+      </div>
     </div>
   );
 }
