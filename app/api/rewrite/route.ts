@@ -1,4 +1,4 @@
-import { AiError, generate, handle } from "@/lib/gemini";
+import { AiError, generateJson, handle } from "@/lib/ai";
 import { languageOf, SUBTITLE_RULES } from "@/lib/prompts";
 
 export const maxDuration = 60;
@@ -25,7 +25,7 @@ const schema = {
 };
 
 export function POST(req: Request) {
-  return handle(req, 20_000, async (body, key) => {
+  return handle(req, 20_000, async (body, ai) => {
     const r = body as RewriteRequest;
     if (!r?.item?.name) throw new AiError("다시 쓸 퀘스트가 없어요.", 400);
     const prompt = `Rewrite one FTB Quests quest for the Minecraft mod "${r.mod}", in ${languageOf(r.lang)}.
@@ -39,11 +39,8 @@ ${r.ask ? `The author asks: ${r.ask.slice(0, 300)}` : ""}
 
 current: ${JSON.stringify(r.current)}
 other quests in the chapter: ${JSON.stringify(r.chapter.slice(0, 60))}`;
-    const res = await generate(key, {
-      contents: prompt,
-      config: { responseMimeType: "application/json", responseJsonSchema: schema, maxOutputTokens: 2048, temperature: 1.1 },
-    });
-    const out = JSON.parse(res.text ?? "{}") as RewriteResponse;
+    const res = await generateJson(ai, { prompt, schema, maxTokens: 2048, temperature: 1.1 });
+    const out = (res ?? {}) as RewriteResponse;
     return {
       title: String(out.title ?? "").slice(0, 120),
       subtitle: String(out.subtitle ?? "").slice(0, 200),

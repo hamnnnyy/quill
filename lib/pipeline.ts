@@ -15,11 +15,14 @@ export class FatalAiError extends Error {} // bad or missing key: retrying won't
 // Called before each wait so the UI can show "busy, retrying in 15s" instead of a frozen screen.
 export type OnRetry = (waitMs: number, reason: string) => void;
 
-async function post<T>(path: string, body: unknown, key: string, onRetry?: OnRetry): Promise<T> {
+// Which AI to use, from settings. An empty key means: Gemini with the dev server's key (local only).
+export type Ai = { provider: string; key: string; model: string };
+
+async function post<T>(path: string, body: unknown, ai: Ai, onRetry?: OnRetry): Promise<T> {
   for (let attempt = 1; ; attempt++) {
     const res = await fetch(path, {
       method: "POST",
-      headers: key ? { "x-gemini-key": key } : {},
+      headers: { "x-ai-provider": ai.provider, ...(ai.key && { "x-ai-key": ai.key }), ...(ai.model && { "x-ai-model": ai.model }) },
       body: JSON.stringify(body),
     });
     const data = await res.json();
@@ -50,7 +53,7 @@ async function pool<T>(items: T[], size: number, fn: (item: T) => Promise<void>)
 export type Progress = { done: number; total: number; failed: number; error?: string };
 
 // Known formats are converted locally; only the rest goes to Gemini, in cached chunks.
-export async function normalizeMod(mod: Mod, key: string, onProgress: (p: Progress) => void, onRetry?: OnRetry) {
+export async function normalizeMod(mod: Mod, ai: Ai, onProgress: (p: Progress) => void, onRetry?: OnRetry) {
   const recipes: Recipe[] = [];
   const unknown = [];
   for (const raw of mod.recipes) {
@@ -67,7 +70,7 @@ export async function normalizeMod(mod: Mod, key: string, onProgress: (p: Progre
   await pool(chunks, PARALLEL, async (chunk) => {
     if (fatal) return;
     try {
-      const out = await cached(["normalize-v1", chunk], () => post<Recipe[]>("/api/normalize", chunk, key, onRetry));
+      const out = await cached(["normalize-v1", chunk], () => post<Recipe[]>("/api/normalize", chunk, ai, onRetry));
       recipes.push(...out.map((r) => ({ ...r, ai: true })));
     } catch (e) {
       if (e instanceof FatalAiError) fatal = e;
@@ -88,7 +91,7 @@ export async function chapterForMod(
   tree: Map<string, Node>,
   label: Label,
   settings: Settings,
-  key: string,
+  ai: Ai,
   exclude: Set<string>, // items that already have a quest in the pack
   onRetry?: OnRetry,
 ): Promise<{ chapter: Chapter; ai: boolean; error?: string }> {
@@ -110,7 +113,7 @@ export async function chapterForMod(
   };
 
   try {
-    const out = await cached(["quests-v2", request], () => post<QuestsResponse>("/api/quests", request, key, onRetry));
+    const out = await cached(["quests-v2", request], () => post<QuestsResponse>("/api/quests", request, ai, onRetry));
     if (!out.quests.length) throw new Error("AI가 고른 퀘스트가 없어요.");
     const texts: QuestText[] = out.quests.map((q) => ({
       key: q.key,
@@ -146,7 +149,7 @@ function rewardPool(recipes: Recipe[], tree: Map<string, Node>, label: Label) {
 }
 
 // One quest, fresh text. Not cached: asking again should give something new.
-export const rewriteQuest = (req: RewriteRequest, key: string) => post<RewriteResponse>("/api/rewrite", req, key);
+export const rewriteQuest = (req: RewriteRequest, ai: Ai) => post<RewriteResponse>("/api/rewrite", req, ai);
 
 // KubeJS edits. Removals by output/id/mod are read locally (they're one-liners); additions need Gemini.
 const REMOVE = /\.remove\(\s*\{([^}]*)\}\s*\)/g;
@@ -167,16 +170,16 @@ export function localKubejs(scripts: { text: string }[]): KubejsChanges {
   return out;
 }
 
-export async function kubejsChanges(scripts: { path: string; text: string }[], key: string, onRetry?: OnRetry) {
+export async function kubejsChanges(scripts: { path: string; text: string }[], ai: Ai, onRetry?: OnRetry) {
   const local = localKubejs(scripts);
   try {
-    const ai = await cached(["kubejs-v1", scripts], () => post<KubejsChanges>("/api/kubejs", scripts, key, onRetry));
+    const read = await cached(["kubejs-v1", scripts], () => post<KubejsChanges>("/api/kubejs", scripts, ai, onRetry));
     return {
       changes: {
-        removed_outputs: [...new Set([...local.removed_outputs, ...ai.removed_outputs])],
-        removed_ids: [...new Set([...local.removed_ids, ...ai.removed_ids])],
-        removed_mods: [...new Set([...local.removed_mods, ...ai.removed_mods])],
-        added: ai.added,
+        removed_outputs: [...new Set([...local.removed_outputs, ...read.removed_outputs])],
+        removed_ids: [...new Set([...local.removed_ids, ...read.removed_ids])],
+        removed_mods: [...new Set([...local.removed_mods, ...read.removed_mods])],
+        added: read.added,
       },
       ai: true,
     };

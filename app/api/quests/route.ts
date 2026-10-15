@@ -1,4 +1,4 @@
-import { AiError, generate, handle } from "@/lib/gemini";
+import { AiError, generateJson, handle } from "@/lib/ai";
 import { languageOf, SUBTITLE_RULES } from "@/lib/prompts";
 
 export const maxDuration = 300;
@@ -46,7 +46,7 @@ const schema = {
 const XP = { low: "5-40", normal: "20-150", high: "50-400" };
 
 export function POST(req: Request) {
-  return handle(req, 400_000, async (body, key) => {
+  return handle(req, 400_000, async (body, ai) => {
     const r = body as QuestsRequest;
     if (!Array.isArray(r?.candidates) || !r.candidates.length) throw new AiError("퀘스트로 만들 아이템이 없어요.", 400);
     const max = Math.min(Math.max(Number(r.maxQuests) || 20, 3), 80);
@@ -76,11 +76,8 @@ ${JSON.stringify(r.candidates)}
 reward_pool:
 ${JSON.stringify(r.rewardPool)}`;
 
-    const res = await generate(key, {
-      contents: prompt,
-      config: { responseMimeType: "application/json", responseJsonSchema: schema, maxOutputTokens: 32768 },
-    });
-    const out = JSON.parse(res.text ?? "{}") as QuestsResponse;
+    const res = await generateJson(ai, { prompt, schema, maxTokens: 32768 });
+    const out = (res ?? {}) as QuestsResponse;
 
     // Gemini output is untrusted: keep only real candidates and real reward ids.
     const keys = new Set(r.candidates.map((c) => c.key));

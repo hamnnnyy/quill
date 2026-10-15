@@ -7,7 +7,7 @@ import { conditionsMet } from "@/lib/conditions";
 import { sessionClear, sessionGet, sessionSet } from "@/lib/cache";
 import { emptyExtract, merge, readDump, readJar, recipeIds, type Extract } from "@/lib/jar";
 import { outputVersion, readPack, type PackInfo } from "@/lib/pack";
-import { applyKubejs, chapterForMod, kubejsChanges, normalizeMod, rewriteQuest } from "@/lib/pipeline";
+import { applyKubejs, chapterForMod, kubejsChanges, normalizeMod, rewriteQuest, type Ai } from "@/lib/pipeline";
 import { questFiles } from "@/lib/snbt";
 import { demo } from "@/lib/demo";
 import { buildTree, layout, newId } from "@/lib/tree";
@@ -19,6 +19,31 @@ import { QuestMap } from "./components/QuestMap";
 import { RecipeCard } from "./components/Recipe";
 import { TASKS, taskText } from "./components/tasks";
 import { bare, type Lookup } from "./components/Slot";
+
+// Mirrors PROVIDERS in lib/ai.ts (server-only, it imports the Gemini SDK).
+const AI_PROVIDERS: Record<string, { label: string; placeholder: string; model: string; keyUrl: string; note: string }> = {
+  gemini: {
+    label: "Google Gemini",
+    placeholder: "AIza…",
+    model: "gemini-3.8-flash",
+    keyUrl: "https://aistudio.google.com/apikey",
+    note: "무료 키는 모델마다 하루 20번이에요.",
+  },
+  openrouter: {
+    label: "OpenRouter",
+    placeholder: "sk-or-…",
+    model: "google/gemma-4-31b-it:free",
+    keyUrl: "https://openrouter.ai/settings/keys",
+    note: "이름이 :free로 끝나는 모델은 무료예요. 하루 50번, 10달러를 한 번 충전한 계정은 1,000번까지예요.",
+  },
+  zhipu: {
+    label: "Zhipu GLM",
+    placeholder: "…",
+    model: "glm-4.7-flash",
+    keyUrl: "https://open.bigmodel.cn/usercenter/apikeys",
+    note: "GLM-4.7-Flash는 Zhipu의 무료 모델이에요. 레시피와 아이템 이름이 중국 서버로 가요.",
+  },
+};
 
 const DEFAULT_SETTINGS: Settings = { version: "1.20.1", lang: "ko", maxQuests: 25, reward: "normal" };
 
@@ -43,7 +68,7 @@ function save(key: string, value: unknown) {
 export default function Home() {
   const [theme, setTheme] = useState("gui");
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  const [apiKey, setApiKey] = useState("");
+  const [ai, setAi] = useState<Ai>({ provider: "gemini", key: "", model: "" });
 
   const [extract, setExtract] = useState<Extract>(emptyExtract);
   const [baseRecipes, setBaseRecipes] = useState<Record<string, Recipe[]>>({}); // before KubeJS edits
@@ -62,7 +87,7 @@ export default function Home() {
   useEffect(() => {
     setTheme(document.documentElement.dataset.theme || "gui");
     setSettings(load("settings", DEFAULT_SETTINGS));
-    setApiKey(load("apiKey", { key: "" }).key);
+    setAi(load("ai", { provider: "gemini", key: load("apiKey", { key: "" }).key, model: "" })); // apiKey: before other providers
   }, []);
 
   // Autosave: what was read (big, changes rarely) and the edits (small, change often) are stored apart.
@@ -104,6 +129,11 @@ export default function Home() {
     await sessionClear();
     location.reload();
   }
+  const changeAi = (patch: Partial<Ai>) => {
+    const next = { ...ai, ...patch };
+    setAi(next);
+    save("ai", next);
+  };
   const changeSettings = (patch: Partial<Settings>) => {
     const next = { ...settings, ...patch };
     setSettings(next);
@@ -259,7 +289,7 @@ export default function Home() {
     let error = "";
     for (const mod of all.mods) {
       job(mod.id, { state: "run", detail: `레시피 ${mod.recipes.length}개` });
-      const res = await normalizeMod(mod, apiKey, (p) => p.total && job(mod.id, { detail: `AI 묶음 ${p.done}/${p.total}` }), retrying(mod.id));
+      const res = await normalizeMod(mod, ai, (p) => p.total && job(mod.id, { detail: `AI 묶음 ${p.done}/${p.total}` }), retrying(mod.id));
       out[mod.id] = res.recipes;
       failed += res.failed;
       error = res.error ?? error;
@@ -268,7 +298,7 @@ export default function Home() {
     }
     if (scripts.length) {
       job("kubejs-scripts", { state: "run", detail: "레시피를 바꾸는 부분을 찾는 중" });
-      const res = await kubejsChanges(scripts, apiKey, retrying("kubejs-scripts"));
+      const res = await kubejsChanges(scripts, ai, retrying("kubejs-scripts"));
       setKubejs(res);
       const c = res.changes;
       const summary = `제거 ${c.removed_outputs.length + c.removed_ids.length + c.removed_mods.length}건, 추가 ${c.added.length}건`;
@@ -285,7 +315,7 @@ export default function Home() {
     const taken = new Set(pack?.existing?.chapters.map((c) => c.filename));
     begin(
       "퀘스트를 쓰는 중이에요",
-      apiKey || process.env.NODE_ENV !== "production"
+      ai.key || process.env.NODE_ENV !== "production"
         ? "AI가 모드마다 중요한 아이템을 골라 제목과 설명을 써요. 챕터 하나에 보통 20초에서 1분쯤 걸려요."
         : "API 키가 없어서 AI 없이 기본 문구로 만들어요.",
       chosen.map((m) => ({ id: m.id, name: m.name })),
@@ -298,7 +328,7 @@ export default function Home() {
     for (const mod of chosen) {
       job(mod.id, { state: "run", detail: "AI가 퀘스트를 고르고 쓰는 중" });
       try {
-        const res = await chapterForMod(mod, recipes[mod.id], trees[mod.id], lookup.label, settings, apiKey, exclude, retrying(mod.id));
+        const res = await chapterForMod(mod, recipes[mod.id], trees[mod.id], lookup.label, settings, ai, exclude, retrying(mod.id));
         let filename = res.chapter.filename;
         for (let n = 2; taken.has(filename); n++) filename = `${res.chapter.filename}_${n}`; // never overwrite the pack's chapters
         taken.add(filename);
@@ -394,7 +424,7 @@ export default function Home() {
         chapter: c.quests.filter((x) => x.id !== q.id).map((x) => [x.title, x.subtitle].filter(Boolean).join(": ")),
         ask,
       },
-      apiKey,
+      ai,
     );
   }
   // Tab order is the order in the quest book (order_index on export).
@@ -600,23 +630,39 @@ export default function Home() {
                 </select>
               </label>
             </div>
-            <label>
-              <span className="label">내 Gemini API 키</span>
-              <input
-                type="password"
-                autoComplete="off"
-                placeholder="AIza…"
-                value={apiKey}
-                onChange={(e) => {
-                  setApiKey(e.target.value);
-                  save("apiKey", { key: e.target.value });
-                }}
-              />
-              <span className="muted hint">
-                이 브라우저에만 저장하고, AI를 부를 때만 서버로 보내요. 비워 두면 AI 없이 기본 문구로 만들어요. 키는{" "}
-                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>에서 받을 수 있어요.
-              </span>
-            </label>
+            <div className="row">
+              <label>
+                <span className="label">AI</span>
+                <select value={ai.provider} onChange={(e) => changeAi({ provider: e.target.value, key: "", model: "" })}>
+                  {Object.entries(AI_PROVIDERS).map(([id, p]) => (
+                    <option key={id} value={id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span className="label">내 {AI_PROVIDERS[ai.provider]?.label} API 키</span>
+                <input
+                  type="password"
+                  autoComplete="off"
+                  placeholder={AI_PROVIDERS[ai.provider]?.placeholder}
+                  value={ai.key}
+                  onChange={(e) => changeAi({ key: e.target.value.trim() })}
+                />
+              </label>
+              <label>
+                <span className="label">모델 (비우면 기본)</span>
+                <input value={ai.model} placeholder={AI_PROVIDERS[ai.provider]?.model} onChange={(e) => changeAi({ model: e.target.value.trim() })} />
+              </label>
+            </div>
+            <p className="muted hint">
+              {AI_PROVIDERS[ai.provider]?.note} 키는{" "}
+              <a href={AI_PROVIDERS[ai.provider]?.keyUrl} target="_blank" rel="noreferrer">
+                여기
+              </a>
+              에서 받아요. 키는 이 브라우저에만 저장하고, AI를 부를 때만 서버를 거쳐 그 회사로 보내요. 비워 두면 AI 없이 만들어요.
+            </p>
             <button className="primary" disabled={busy || !picked.size} onClick={makeQuests}>
               {chapters.length ? "퀘스트 다시 만들기" : "퀘스트 만들기"}
             </button>

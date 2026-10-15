@@ -114,7 +114,15 @@ jar만으로는 모드가 코드로 등록하는 레시피와 팩이 KubeJS로 �
 
 - jar와 zip은 브라우저 밖으로 나가지 않습니다.
 - AI가 필요할 때는 레시피 JSON, KubeJS 스크립트, 아이템 이름 목록만 서버를 거쳐 Gemini로 보냅니다.
-- 배포된 Quill은 서버의 API 키를 쓰지 않습니다. 화면의 "내 Gemini API 키" 칸에 [Google AI Studio](https://aistudio.google.com/apikey)에서 받은 키를 넣어야 AI를 씁니다.
+- 배포된 Quill은 서버의 API 키를 쓰지 않습니다. 3단계에서 AI를 고르고 내 키를 넣어야 AI를 씁니다.
+
+  | AI | 무료로 쓰는 법 |
+  |---|---|
+  | Google Gemini | [Google AI Studio](https://aistudio.google.com/apikey) 무료 키. 모델마다 하루 20번 |
+  | OpenRouter | [무료 모델](https://openrouter.ai/models?q=free)(`:free`). 하루 50번, 10달러를 한 번 충전한 계정은 1,000번 |
+  | Zhipu GLM | 무료 모델 `glm-4.7-flash`. 데이터가 중국 서버로 갑니다 |
+
+  서버는 이 세 곳의 정해진 주소로만 요청을 보냅니다.
 - 키는 그 브라우저에만 저장됩니다. 키가 없어도 AI 없이 만들 수 있습니다(제목만 들어가고 설명은 직접 씁니다).
 - 같은 요청에 대한 AI 결과는 브라우저(IndexedDB)에 저장해 두고 다시 쓰므로, 같은 모드를 다시 넣으면 AI를 다시 부르지 않습니다.
 
@@ -140,7 +148,8 @@ app/components/              슬롯, 퀘스트 맵 편집기, 진행 상황 패�
 app/api/normalize            처음 보는 레시피 형식 → 표준 형식 (Gemini)
 app/api/quests               퀘스트 고르기와 문구 쓰기 (Gemini)
 app/api/kubejs               KubeJS 스크립트의 레시피 변경 읽기 (Gemini)
-app/api/rewrite              퀘스트 하나 다시 쓰기 (Gemini)
+app/api/rewrite              퀘스트 하나 다시 쓰기 (AI)
+lib/ai.ts                    AI 제공자 (Gemini, OpenRouter, Zhipu GLM)
 lib/jar.ts, lib/pack.ts      jar, 모드팩 zip 읽기 (브라우저)
 lib/convert.ts               형식이 정해진 레시피 변환 (AI 없이)
 lib/tree.ts                  진행 트리, 퀘스트 의존 관계, 맵 배치

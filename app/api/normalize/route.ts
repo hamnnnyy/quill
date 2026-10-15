@@ -1,4 +1,4 @@
-import { AiError, generate, handle } from "@/lib/gemini";
+import { AiError, generateJson, handle } from "@/lib/ai";
 
 export const maxDuration = 300;
 
@@ -41,12 +41,9 @@ Convert each recipe into the schema. Rules:
 `;
 
 export function POST(req: Request) {
-  return handle(req, 300_000, async (recipes, key) => {
+  return handle(req, 300_000, async (recipes, ai) => {
     if (!Array.isArray(recipes)) throw new AiError("레시피 배열이 필요해요.", 400);
-    const res = await generate(key, {
-      contents: PROMPT + JSON.stringify(recipes),
-      config: { responseMimeType: "application/json", responseJsonSchema: schema, maxOutputTokens: 65536 },
-    });
-    return JSON.parse(res.text ?? "[]");
+    const res = await generateJson(ai, { prompt: PROMPT + JSON.stringify(recipes), schema, maxTokens: 65536 });
+    return res ?? [];
   });
 }

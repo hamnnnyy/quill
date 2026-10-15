@@ -1,4 +1,4 @@
-import { AiError, generate, handle } from "@/lib/gemini";
+import { AiError, generateJson, handle } from "@/lib/ai";
 
 export const maxDuration = 300;
 
@@ -51,13 +51,10 @@ Use only ids that appear in the scripts. Never invent ids.
 `;
 
 export function POST(req: Request) {
-  return handle(req, 300_000, async (body, key) => {
+  return handle(req, 300_000, async (body, ai) => {
     const scripts = body as { path: string; text: string }[];
     if (!Array.isArray(scripts) || !scripts.length) throw new AiError("스크립트가 없어요.", 400);
-    const res = await generate(key, {
-      contents: PROMPT + scripts.map((s) => `// ==== ${s.path}\n${s.text}`).join("\n\n"),
-      config: { responseMimeType: "application/json", responseJsonSchema: schema, maxOutputTokens: 65536 },
-    });
-    return JSON.parse(res.text ?? "{}") as KubejsChanges;
+    const res = await generateJson(ai, { prompt: PROMPT + scripts.map((s) => `// ==== ${s.path}\n${s.text}`).join("\n\n"), schema, maxTokens: 65536 });
+    return (res ?? {}) as KubejsChanges;
   });
 }
