@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { Chapter, Quest } from "@/lib/types";
+import type { Chapter, Quest, Recipe } from "@/lib/types";
+import { RecipeCard } from "./Recipe";
 import { Slot, type Lookup } from "./Slot";
 import { ITEM_ID } from "@/lib/snbt";
 
@@ -15,12 +16,15 @@ type Props = {
   addable: { key: string; label: string }[];
   onAdd: (key: string) => void;
   items: { id: string; name: string }[];
+  recipesFor: (id: string) => Recipe[];
 };
 
-export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items }: Props) {
+export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items, recipesFor }: Props) {
   const [selected, setSelected] = useState<string>();
   const drag = useRef<{ id: string; px: number; py: number; x: number; y: number; moved: boolean; bounds: Bounds }>(null);
   const [frozen, setFrozen] = useState<Bounds>();
+  // Recipe view in the editor: trail of items opened from the quest's item, down through ingredients.
+  const [trail, setTrail] = useState<{ quest: string; ids: string[] }>();
 
   const bounds = frozen ?? boundsOf(chapter.quests);
   const pos = (q: Quest) => ({ left: (q.x - bounds.minX + 1) * S, top: (q.y - bounds.minY + 1) * S });
@@ -106,6 +110,25 @@ export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items }: P
       <aside className="panel editor">
         {quest ? (
           <>
+            <div className="field">
+              <span className="label">필요 아이템 (누르면 조합법)</span>
+              <button
+                className="slot-button"
+                aria-expanded={trail?.quest === quest.id}
+                onClick={() => setTrail(trail?.quest === quest.id ? undefined : { quest: quest.id, ids: [quest.key] })}
+              >
+                <Slot id={quest.key} count={quest.count} lookup={lookup} />
+                <span>{lookup.label(quest.key)}</span>
+              </button>
+            </div>
+            {trail?.quest === quest.id && (
+              <RecipeView
+                ids={trail.ids}
+                lookup={lookup}
+                recipesFor={recipesFor}
+                onTrail={(ids) => setTrail({ quest: quest.id, ids })}
+              />
+            )}
             <label>
               <span className="label">제목</span>
               <input value={quest.title} onChange={(e) => update(quest.id, { title: e.target.value })} />
@@ -225,6 +248,36 @@ export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items }: P
           </>
         )}
       </aside>
+    </div>
+  );
+}
+
+function RecipeView({ ids, lookup, recipesFor, onTrail }: {
+  ids: string[];
+  lookup: Lookup;
+  recipesFor: (id: string) => Recipe[];
+  onTrail: (ids: string[]) => void;
+}) {
+  const id = ids[ids.length - 1];
+  const list = recipesFor(id);
+  return (
+    <div className="recipe-view">
+      {ids.length > 1 && (
+        <nav className="chips" aria-label="조합법 경로">
+          {ids.map((x, i) => (
+            <button key={i} className="chip" disabled={i === ids.length - 1} onClick={() => onTrail(ids.slice(0, i + 1))}>
+              {lookup.label(x)}
+            </button>
+          ))}
+        </nav>
+      )}
+      {list.length ? (
+        list.map((r, i) => <RecipeCard key={i} r={r} lookup={lookup} onPick={(g) => onTrail([...ids, g])} />)
+      ) : (
+        <p className="muted">
+          {id.startsWith("#") ? "여러 아이템 중 아무거나 쓰는 재료예요." : "넣은 모드에서 조합법을 찾지 못했어요. 캐거나 줍는 기본 재료일 수 있어요."}
+        </p>
+      )}
     </div>
   );
 }

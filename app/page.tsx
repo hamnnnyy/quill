@@ -13,7 +13,8 @@ import { vanillaIcons, vanillaNames } from "@/lib/vanilla";
 import { Activity, MapSkeleton, type ActivityState, type Job } from "./components/Activity";
 import { Hotbar } from "./components/Hotbar";
 import { QuestMap } from "./components/QuestMap";
-import { bare, Slot, type Lookup } from "./components/Slot";
+import { RecipeCard } from "./components/Recipe";
+import { bare, type Lookup } from "./components/Slot";
 
 const DEFAULT_SETTINGS: Settings = { version: "1.20.1", lang: "ko", maxQuests: 25, reward: "normal" };
 
@@ -86,6 +87,15 @@ export default function Home() {
   );
   // Every item Quill knows a name for (mods + vanilla): what a hand-picked reward can be.
   const items = useMemo(() => [...extract.names].map(([id, name]) => ({ id, name })), [extract]);
+  // Recipes by what they make, across all mods: the editor's "how do I craft this" view.
+  const recipesFor = useMemo(() => {
+    const by = new Map<string, Recipe[]>();
+    for (const r of Object.values(recipes).flat()) {
+      const k = r.result_variant || r.result;
+      by.set(k, [...(by.get(k) ?? []), r]);
+    }
+    return (id: string) => by.get(id) ?? [];
+  }, [recipes]);
   const trees = useMemo(() => Object.fromEntries(Object.entries(recipes).map(([m, r]) => [m, buildTree(r)])), [recipes]);
   const mods = useMemo(() => {
     const list = [...extract.mods];
@@ -384,27 +394,9 @@ export default function Home() {
                 </summary>
                 {open === mod.id && (
                   <div className="recipes">
-                    {recipes[mod.id].map((r, i) => {
-                      const result = r.result_variant || r.result;
-                      return (
-                        <article key={i} className="panel recipe" title={r.source}>
-                          <h3>
-                            {lookup.label(result)}
-                            {r.result_count > 1 && <span className="muted"> ×{r.result_count}</span>}
-                          </h3>
-                          <div className="craft">
-                            <div className="grid">
-                              {r.ingredients.map((g, j) => (
-                                <Slot key={j} id={g.id} count={g.count} lookup={lookup} />
-                              ))}
-                            </div>
-                            <span className="arrow" aria-hidden />
-                            <Slot id={result} count={r.result_count} big lookup={lookup} />
-                          </div>
-                          <p className="muted">{lookup.label(r.station)}에서 만들어요.</p>
-                        </article>
-                      );
-                    })}
+                    {recipes[mod.id].map((r, i) => (
+                      <RecipeCard key={i} r={r} lookup={lookup} />
+                    ))}
                   </div>
                 )}
               </details>
@@ -522,6 +514,7 @@ export default function Home() {
             onChange={(c) => updateChapter(active, c)}
             addable={addable}
             items={items}
+            recipesFor={recipesFor}
             onAdd={(k) => addQuest(active, k)}
           />
         </section>
