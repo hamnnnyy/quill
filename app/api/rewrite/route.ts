@@ -7,6 +7,7 @@ export type RewriteRequest = {
   mod: string;
   lang: "ko" | "en";
   item: { name: string; madeFrom: string[]; station: string };
+  goal?: string; // set for non-item tasks: "zombie 10마리 처치"
   current: { title: string; subtitle: string; description: string[] };
   chapter: string[]; // other quest titles, for tone and to avoid repeats
   ask: string; // what the user wants changed, may be empty
@@ -28,7 +29,7 @@ export function POST(req: Request) {
     const r = body as RewriteRequest;
     if (!r?.item?.name) throw new AiError("다시 쓸 퀘스트가 없어요.", 400);
     const prompt = `Rewrite one FTB Quests quest for the Minecraft mod "${r.mod}", in ${languageOf(r.lang)}.
-The quest asks the player to obtain: ${r.item.name} (made at ${r.item.station} from ${r.item.madeFrom.join(", ") || "basic materials"}).
+${r.goal ? `The quest asks the player to: ${r.goal}.` : `The quest asks the player to obtain: ${r.item.name} (made at ${r.item.station} from ${r.item.madeFrom.join(", ") || "basic materials"}).`}
 Write like a game, not a manual.
 - title: short, names the item or the goal
 ${SUBTITLE_RULES}

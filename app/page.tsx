@@ -10,12 +10,13 @@ import { applyKubejs, chapterForMod, kubejsChanges, normalizeMod, rewriteQuest }
 import { questFiles } from "@/lib/snbt";
 import { demo } from "@/lib/demo";
 import { buildTree, layout, newId } from "@/lib/tree";
-import type { Chapter, Quest, Recipe, Settings } from "@/lib/types";
+import type { Chapter, Quest, Recipe, Settings, Task } from "@/lib/types";
 import { vanillaIcons, vanillaNames } from "@/lib/vanilla";
 import { Activity, MapSkeleton, type ActivityState, type Job } from "./components/Activity";
 import { Hotbar } from "./components/Hotbar";
 import { QuestMap } from "./components/QuestMap";
 import { RecipeCard } from "./components/Recipe";
+import { TASKS, taskText } from "./components/tasks";
 import { bare, type Lookup } from "./components/Slot";
 
 const DEFAULT_SETTINGS: Settings = { version: "1.20.1", lang: "ko", maxQuests: 25, reward: "normal" };
@@ -318,24 +319,25 @@ export default function Home() {
 
   const modOfChapter = (c: Chapter) => mods.find((m) => c.filename.startsWith(`quill_${m.id.replace(/[^a-z0-9_]/g, "_")}`));
 
-  function addQuest(chapterIndex: number, key: string) {
+  function addQuest(chapterIndex: number, key: string, task?: Task) {
     const c = chapters[chapterIndex];
     const mod = modOfChapter(c);
     const node = mod && trees[mod.id]?.get(key);
-    if (!node) return;
+    if (!node && !task) return;
     const maxX = Math.max(0, ...c.quests.map((q) => q.x));
-    const quest = {
+    const quest: Quest = {
       id: newId(),
       key,
-      item: node.item,
-      nbt: node.nbt,
+      item: node?.item ?? key,
+      nbt: node?.nbt,
       count: 1,
-      title: lookup.label(key),
+      title: task ? TASKS.find((t) => t.type === task.type)!.label.replace(/ \(.*\)$/, "") : lookup.label(key),
       description: [],
       x: maxX + 2,
       y: 0,
       deps: [],
-      xp: 10 * node.depth,
+      xp: node ? 10 * node.depth : 20,
+      task,
     };
     updateChapter(chapterIndex, { ...c, quests: [...c.quests, quest] });
   }
@@ -381,6 +383,7 @@ export default function Home() {
         mod: mod?.name ?? c.title,
         lang: settings.lang,
         item: { name: lookup.label(q.key), madeFrom: node?.deps.map(lookup.label) ?? [], station: lookup.label(node?.station ?? "crafting_table") },
+        goal: q.task && taskText(q.task, lookup.label),
         current: { title: q.title, subtitle: q.subtitle ?? "", description: q.description },
         chapter: c.quests.filter((x) => x.id !== q.id).map((x) => [x.title, x.subtitle].filter(Boolean).join(": ")),
         ask,
@@ -650,7 +653,7 @@ export default function Home() {
             items={items}
             recipesFor={recipesFor}
             onRewrite={(q, ask) => rewrite(chapter, q, ask)}
-            onAdd={(k) => addQuest(active, k)}
+            onAdd={(k, t) => addQuest(active, k, t)}
           />
         </section>
       )}

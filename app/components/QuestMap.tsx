@@ -1,11 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { Chapter, Quest, Recipe } from "@/lib/types";
+import type { Chapter, Quest, Recipe, Task } from "@/lib/types";
 import { parseMc } from "@/lib/mctext";
 import { RecipeCard } from "./Recipe";
+import { SUGGEST, TASKS, taskText } from "./tasks";
 import { Slot, type Lookup } from "./Slot";
-import { ITEM_ID } from "@/lib/snbt";
+import { ITEM_ID, validTask } from "@/lib/snbt";
 
 const S = 64; // px per FTB quest unit
 const SNAP = 0.5;
@@ -15,7 +16,7 @@ type Props = {
   lookup: Lookup;
   onChange: (c: Chapter) => void;
   addable: { key: string; label: string }[];
-  onAdd: (key: string) => void;
+  onAdd: (key: string, task?: Task) => void;
   items: { id: string; name: string }[];
   recipesFor: (id: string) => Recipe[];
   onRewrite: (q: Quest, ask: string) => Promise<{ title: string; subtitle: string; description: string[] }>;
@@ -124,7 +125,7 @@ export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items, rec
         {quest ? (
           <>
             <div className="field">
-              <span className="label">필요 아이템 (누르면 조합법)</span>
+              <span className="label">{quest.task ? "맵 아이콘 아이템 (누르면 조합법)" : "필요 아이템 (누르면 조합법)"}</span>
               <button
                 className="slot-button"
                 aria-expanded={trail?.quest === quest.id}
@@ -134,6 +135,7 @@ export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items, rec
                 <span>{lookup.label(quest.key)}</span>
               </button>
             </div>
+            <TaskEditor quest={quest} onChange={(task) => update(quest.id, { task })} />
             {trail?.quest === quest.id && (
               <RecipeView
                 ids={trail.ids}
@@ -176,10 +178,12 @@ export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items, rec
               <QuestPreview quest={quest} lookup={lookup} />
             </details>
             <div className="row">
+{!quest.task && (
               <label>
                 <span className="label">필요 개수</span>
                 <input type="number" min={1} value={quest.count} onChange={(e) => update(quest.id, { count: Math.max(1, +e.target.value) })} />
               </label>
+              )}
               <label>
                 <span className="label">경험치 보상</span>
                 <input type="number" min={0} value={quest.xp} onChange={(e) => update(quest.id, { xp: Math.max(0, +e.target.value) })} />
@@ -262,22 +266,84 @@ export function QuestMap({ chapter, lookup, onChange, addable, onAdd, items, rec
               <span className="label">챕터 소개</span>
               <input value={chapter.subtitle} onChange={(e) => onChange({ ...chapter, subtitle: e.target.value })} />
             </label>
-            {addable.length > 0 && (
+            {(
               <label>
                 <span className="label">퀘스트 추가</span>
-                <select value="" onChange={(e) => e.target.value && onAdd(e.target.value)}>
-                  <option value="">아이템 고르기</option>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const t = TASKS.find((x) => `task:${x.type}` === e.target.value);
+                    if (t) onAdd(t.icon, t.make());
+                    else if (e.target.value) onAdd(e.target.value);
+                  }}
+                >
+                  <option value="">고르기</option>
+                  <optgroup label="아이템 없는 퀘스트">
+                    {TASKS.map((t) => (
+                      <option key={t.type} value={`task:${t.type}`}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="아이템 얻기">
                   {addable.map((a) => (
                     <option key={a.key} value={a.key}>
                       {a.label}
                     </option>
                   ))}
+                  </optgroup>
                 </select>
               </label>
             )}
           </>
         )}
       </aside>
+    </div>
+  );
+}
+
+function TaskEditor({ quest, onChange }: { quest: Quest; onChange: (t: Task | undefined) => void }) {
+  const t = quest.task;
+  const text = (field: "entity" | "dimension" | "structure" | "biome", label: string) => {
+    const value = (t as Record<string, string>)[field];
+    return (
+      <label>
+        <span className="label">{label}</span>
+        <input list={`quill-${field}`} value={value} onChange={(e) => onChange({ ...t, [field]: e.target.value.trim() } as Task)} />
+        <datalist id={`quill-${field}`}>
+          {SUGGEST[field].map((x) => (
+            <option key={x} value={x} />
+          ))}
+        </datalist>
+      </label>
+    );
+  };
+  return (
+    <div className="task-editor">
+      <label>
+        <span className="label">과제 종류</span>
+        <select value={t?.type ?? "item"} onChange={(e) => onChange(TASKS.find((x) => x.type === e.target.value)?.make())}>
+          <option value="item">아이템 얻기</option>
+          {TASKS.map((x) => (
+            <option key={x.type} value={x.type}>
+              {x.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {t?.type === "kill" && (
+        <div className="row">
+          {text("entity", "몹 (minecraft:zombie)")}
+          <label>
+            <span className="label">마리 수</span>
+            <input type="number" min={1} value={t.value} onChange={(e) => onChange({ ...t, value: Math.max(1, +e.target.value) })} />
+          </label>
+        </div>
+      )}
+      {t?.type === "dimension" && text("dimension", "차원")}
+      {t?.type === "structure" && text("structure", "구조물 (#으로 시작하면 태그)")}
+      {t?.type === "biome" && text("biome", "바이옴")}
+      {t && !validTask(t) && <span className="warn">모드id:이름 형식으로 써 주세요. 이대로면 내보낼 때 아이템 얻기 과제로 바뀌어요.</span>}
     </div>
   );
 }
@@ -321,7 +387,7 @@ function QuestPreview({ quest, lookup }: { quest: Quest; lookup: Lookup }) {
       </div>
       <div className="mc-row">
         <span>과제</span>
-        <Slot id={quest.key} count={quest.count} lookup={lookup} />
+        {quest.task ? <span className="mc-task">{taskText(quest.task, lookup.label)}</span> : <Slot id={quest.key} count={quest.count} lookup={lookup} />}
         <span>보상</span>
         {quest.xp > 0 && <span className="mc-xp">+{Math.round(quest.xp)} XP</span>}
         {quest.rewardItem && <Slot id={quest.rewardItem} count={quest.rewardCount} lookup={lookup} />}

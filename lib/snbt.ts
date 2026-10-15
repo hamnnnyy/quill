@@ -1,4 +1,4 @@
-import type { Chapter, McVersion, Quest } from "./types";
+import type { Chapter, McVersion, Quest, Task } from "./types";
 import { newId } from "./tree.ts";
 
 // Writes FTB Quests files. Layout and field names checked against FTBTeam/FTB-Quests source:
@@ -40,6 +40,16 @@ export function snbt(v: V, indent = ""): string {
 // namespace:path; a hand-typed reward that isn't one is left out instead of breaking the quest file
 export const ITEM_ID = /^[a-z0-9_.-]+:[a-z0-9_./-]+$/;
 
+// A hand-typed id FTB can't parse would break the whole chapter file, so a bad task falls back to the item task.
+export function validTask(t: Task) {
+  const id = (s: string, tag = false) => ITEM_ID.test(tag ? s.replace(/^#/, "") : s);
+  if (t.type === "kill") return id(t.entity) && t.value >= 1;
+  if (t.type === "dimension") return id(t.dimension);
+  if (t.type === "structure") return id(t.structure, true);
+  if (t.type === "biome") return id(t.biome, true);
+  return true;
+}
+
 function item(id: string, nbt: Record<string, string> | undefined, version: McVersion): V {
   if (version === "1.21.1") return nbt ? { id, count: 1, components: { "minecraft:custom_data": nbt } } : { id, count: 1 };
   return nbt ? { id, Count: b(1), tag: nbt } : id; // ftbquests NBTUtils.write: plain count-1 items become a bare id string
@@ -60,15 +70,17 @@ function quest(q: Quest, version: McVersion): V {
     description: legacyText && q.description.length ? q.description : undefined,
     dependencies: q.deps.length ? q.deps : undefined,
     tasks: [
-      {
-        id: newId(),
-        type: "item",
-        item: item(q.item, q.nbt, version),
-        count: q.count > 1 ? L(q.count) : undefined,
-        // 1.20.1 only compares NBT when told to; without this every gun would complete the AK quest
-        match_nbt: q.nbt && legacyText ? true : undefined,
-        match_components: q.nbt && !legacyText ? "strict" : undefined,
-      },
+      q.task && validTask(q.task)
+        ? { id: newId(), ...q.task, ...(q.task.type === "kill" ? { value: L(Math.max(1, q.task.value)) } : {}) }
+        : {
+            id: newId(),
+            type: "item",
+            item: item(q.item, q.nbt, version),
+            count: q.count > 1 ? L(q.count) : undefined,
+            // 1.20.1 only compares NBT when told to; without this every gun would complete the AK quest
+            match_nbt: q.nbt && legacyText ? true : undefined,
+            match_components: q.nbt && !legacyText ? "strict" : undefined,
+          },
     ],
     rewards: rewards.length ? rewards : undefined,
   };

@@ -46,6 +46,15 @@ assert.equal(neu["config/ftbquests/quests/lang/en_us.snbt"], lang);
 const typo = questFiles([{ ...chapter, quests: [{ ...chapter.quests[0], rewardItem: "다이아몬드" }] }], "1.20.1", { newBook: false, locale: "ko_kr" });
 const typoCh = typo["config/ftbquests/quests/chapters/quill_tacz.snbt"];
 assert.ok(!typoCh.includes("다이아몬드") && typoCh.includes('type: "xp"'));
+// other task types: FTB field names, value as a long
+const kill = questFiles([{ ...chapter, quests: [{ ...chapter.quests[0], task: { type: "kill", entity: "minecraft:zombie", value: 10 } }] }], "1.20.1", { newBook: false, locale: "ko_kr" });
+const killCh = kill["config/ftbquests/quests/chapters/quill_tacz.snbt"];
+assert.ok(killCh.includes('type: "kill"') && killCh.includes('entity: "minecraft:zombie"') && killCh.includes("value: 10L"));
+assert.ok(!killCh.includes("match_nbt"), "no item task left behind");
+const dim = questFiles([{ ...chapter, quests: [{ ...chapter.quests[0], task: { type: "dimension", dimension: "minecraft:the_nether" } }] }], "1.21.1", { newBook: false, locale: "ko_kr" });
+assert.ok(dim["config/ftbquests/quests/chapters/quill_tacz.snbt"].includes('dimension: "minecraft:the_nether"'));
+const bad = questFiles([{ ...chapter, quests: [{ ...chapter.quests[0], task: { type: "kill", entity: "좀비", value: 3 } }] }], "1.20.1", { newBook: false, locale: "ko_kr" });
+assert.ok(bad["config/ftbquests/quests/chapters/quill_tacz.snbt"].includes("match_nbt"), "bad kill task falls back to the item task");
 // round trip: what we write, we can read back
 const back = parseSnbt(ch) as { quests: { x: number; tasks: { item: { id: string; Count: number; tag: { GunId: string } } }[] }[] };
 assert.equal(back.quests[0].x, 2);

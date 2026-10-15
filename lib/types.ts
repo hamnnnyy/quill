@@ -17,6 +17,15 @@ export type Mod = {
   recipes: RawRecipe[];
 };
 
+// What the quest asks for. No task = the default: obtain the quest's item.
+// Field names follow FTB Quests' task classes (KillTask, DimensionTask, ...), same in 1.20.1 and 1.21.1.
+export type Task =
+  | { type: "kill"; entity: string; value: number }
+  | { type: "checkmark" }
+  | { type: "dimension"; dimension: string }
+  | { type: "structure"; structure: string }
+  | { type: "biome"; biome: string };
+
 export type Quest = {
   id: string; // 16 hex chars, FTB Quests object id
   key: string; // tree node key: result_variant || result
@@ -32,6 +41,7 @@ export type Quest = {
   xp: number;
   rewardItem?: string;
   rewardCount?: number;
+  task?: Task; // the item (key) stays as the map icon
 };
 
 export type Chapter = {
