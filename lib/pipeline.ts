@@ -2,7 +2,6 @@ import type { KubejsChanges } from "@/app/api/kubejs/route";
 import type { QuestsRequest, QuestsResponse } from "@/app/api/quests/route";
 import { cacheGet, cacheSet, hashKey } from "./cache.ts";
 import { convert } from "./convert.ts";
-import { fallbackText } from "./flavor.ts";
 import { buildChapter, fallbackPick, type Node, type QuestText } from "./tree.ts";
 import type { Chapter, Mod, Recipe, Settings } from "./types";
 
@@ -126,11 +125,8 @@ export async function chapterForMod(
     // No AI (quota, no key): still a usable chapter, just plainer text.
     const keys = fallbackPick(new Map(nodes.map((n) => [n.key, n])), settings.maxQuests);
     const scale = settings.reward === "high" ? 3 : settings.reward === "low" ? 0.5 : 1;
-    const texts: QuestText[] = fallbackText(keys, tree, label, settings.lang).map((t) => ({
-      ...t,
-      title: label(t.key),
-      xp: 10 * tree.get(t.key)!.depth * scale,
-    }));
+    // No canned text: we can't know what any mod is about. Title is the item name, the rest is left to the editor.
+    const texts: QuestText[] = keys.map((key) => ({ key, title: label(key), description: [], xp: 10 * tree.get(key)!.depth * scale }));
     return {
       chapter: buildChapter(mod, tree, texts, { title: mod.name, subtitle: "" }),
       ai: false,
