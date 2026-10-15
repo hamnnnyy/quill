@@ -3,6 +3,7 @@
 import { zipSync, strToU8 } from "fflate";
 import { useEffect, useMemo, useState } from "react";
 import type { KubejsChanges } from "@/app/api/kubejs/route";
+import { sessionClear, sessionGet, sessionSet } from "@/lib/cache";
 import { emptyExtract, merge, readDump, readJar, recipeIds, type Extract } from "@/lib/jar";
 import { outputVersion, readPack, type PackInfo } from "@/lib/pack";
 import { applyKubejs, chapterForMod, kubejsChanges, normalizeMod } from "@/lib/pipeline";
@@ -60,6 +61,45 @@ export default function Home() {
     setSettings(load("settings", DEFAULT_SETTINGS));
     setApiKey(load("apiKey", { key: "" }).key);
   }, []);
+
+  // Autosave: what was read (big, changes rarely) and the edits (small, change often) are stored apart.
+  type Input = { extract: Extract; baseRecipes: Record<string, Recipe[]>; kubejs?: typeof kubejs; pack?: PackInfo; picked: Set<string> };
+  type Work = { chapters: Chapter[]; active: number; newBook: boolean; savedAt: number };
+  const [restored, setRestored] = useState(false);
+  useEffect(() => {
+    (async () => {
+      const input = await sessionGet<Input>("input");
+      const work = await sessionGet<Work>("work");
+      if (input?.extract.mods.length) {
+        setExtract(input.extract);
+        setBaseRecipes(input.baseRecipes);
+        setKubejs(input.kubejs);
+        setPack(input.pack);
+        setPicked(input.picked);
+        if (work?.chapters.length) {
+          setChapters(work.chapters);
+          setActive(Math.min(work.active, work.chapters.length - 1));
+          setNewBook(work.newBook);
+        }
+        setNotice(`지난 작업을 불러왔어요 (${new Date(work?.savedAt ?? Date.now()).toLocaleString()}).`);
+        setCanReset(true);
+      }
+      setRestored(true);
+    })();
+  }, []);
+  useEffect(() => {
+    if (restored && !activity) sessionSet("input", { extract, baseRecipes, kubejs, pack, picked } satisfies Input);
+  }, [restored, activity, extract, baseRecipes, kubejs, pack, picked]);
+  useEffect(() => {
+    if (!restored) return;
+    const t = setTimeout(() => sessionSet("work", { chapters, active, newBook, savedAt: Date.now() } satisfies Work), 400);
+    return () => clearTimeout(t);
+  }, [restored, chapters, active, newBook]);
+  const [canReset, setCanReset] = useState(false);
+  async function startOver() {
+    await sessionClear();
+    location.reload();
+  }
   const changeSettings = (patch: Partial<Settings>) => {
     const next = { ...settings, ...patch };
     setSettings(next);
@@ -117,6 +157,7 @@ export default function Home() {
     if (!files.length) return setNotice("jar, 모드팩 zip, 또는 Quill 덤프(.json)를 넣어 주세요.");
     setNotice("");
     setCanRetry(false);
+    setCanReset(false);
     setBaseRecipes({});
     setKubejs(undefined);
     setPack(undefined);
@@ -350,6 +391,7 @@ export default function Home() {
         <section className="panel status" aria-live="polite">
           <p>{notice}</p>
           {canRetry && <button onClick={() => normalizeAll()}>실패한 부분 다시 시도</button>}
+          {canReset && <button onClick={startOver}>지우고 새로 시작</button>}
         </section>
       )}
 
