@@ -2,6 +2,7 @@ import type { KubejsChanges } from "@/app/api/kubejs/route";
 import type { QuestsRequest, QuestsResponse } from "@/app/api/quests/route";
 import { cacheGet, cacheSet, hashKey } from "./cache.ts";
 import { convert } from "./convert.ts";
+import { fallbackText } from "./flavor.ts";
 import { buildChapter, fallbackPick, type Node, type QuestText } from "./tree.ts";
 import type { Chapter, Mod, Recipe, Settings } from "./types";
 
@@ -123,16 +124,13 @@ export async function chapterForMod(
     return { chapter: buildChapter(mod, tree, texts, { title: out.chapter_title, subtitle: out.chapter_subtitle }), ai: true };
   } catch (e) {
     // No AI (quota, no key): still a usable chapter, just plainer text.
-    const en = settings.lang === "en";
-    const texts: QuestText[] = fallbackPick(new Map(nodes.map((n) => [n.key, n])), settings.maxQuests).map((k) => {
-      const n = tree.get(k)!;
-      return {
-        key: k,
-        title: label(k),
-        description: [en ? `Made at: ${label(n.station)}.` : `${label(n.station)}에서 만들어요.`],
-        xp: 10 * n.depth * (settings.reward === "high" ? 3 : settings.reward === "low" ? 0.5 : 1),
-      };
-    });
+    const keys = fallbackPick(new Map(nodes.map((n) => [n.key, n])), settings.maxQuests);
+    const scale = settings.reward === "high" ? 3 : settings.reward === "low" ? 0.5 : 1;
+    const texts: QuestText[] = fallbackText(keys, tree, label, settings.lang).map((t) => ({
+      ...t,
+      title: label(t.key),
+      xp: 10 * tree.get(t.key)!.depth * scale,
+    }));
     return {
       chapter: buildChapter(mod, tree, texts, { title: mod.name, subtitle: "" }),
       ai: false,
