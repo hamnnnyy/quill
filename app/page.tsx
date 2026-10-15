@@ -8,7 +8,8 @@ import { emptyExtract, merge, readDump, readJar, recipeIds, type Extract } from 
 import { outputVersion, readPack, type PackInfo } from "@/lib/pack";
 import { applyKubejs, chapterForMod, kubejsChanges, normalizeMod, rewriteQuest } from "@/lib/pipeline";
 import { questFiles } from "@/lib/snbt";
-import { buildTree, newId } from "@/lib/tree";
+import { demo } from "@/lib/demo";
+import { buildTree, layout, newId } from "@/lib/tree";
 import type { Chapter, Quest, Recipe, Settings } from "@/lib/types";
 import { vanillaIcons, vanillaNames } from "@/lib/vanilla";
 import { Activity, MapSkeleton, type ActivityState, type Job } from "./components/Activity";
@@ -219,6 +220,26 @@ export default function Home() {
     await normalizeAll(all, info);
   }
 
+  async function loadDemo() {
+    setNotice("");
+    setCanRetry(false);
+    setCanReset(false);
+    const [icons, names] = await Promise.all([vanillaIcons(), vanillaNames()]);
+    const { recipes: demoRecipes, chapter: demoChapter } = demo();
+    setExtract({ ...emptyExtract(), mods: [{ id: "minecraft", name: "바닐라 생존 (예시)", recipes: [] }], icons, names });
+    setBaseRecipes({ minecraft: demoRecipes });
+    setKubejs(undefined);
+    setPack(undefined);
+    setPicked(new Set(["minecraft"]));
+    history.current = { past: [], future: [], last: 0 };
+    setChapters([demoChapter]);
+    setActive(0);
+    setNewBook(true);
+    setNotice("예시 챕터를 불러왔어요. 4단계 맵에서 퀘스트를 눌러 고쳐 보고, 5단계에서 zip으로 받아 볼 수 있어요. 내 모드로 하려면 위에 jar를 넣으세요.");
+    setCanReset(true);
+    requestAnimationFrame(() => document.getElementById("s4")?.scrollIntoView({ behavior: "smooth" }));
+  }
+
   async function normalizeAll(all = extract, info = pack) {
     const scripts = info?.scripts ?? [];
     begin(
@@ -422,6 +443,9 @@ export default function Home() {
             />
             mods 폴더 통째로 고르기
           </label>
+          <button className="button-like" disabled={busy} onClick={loadDemo}>
+            jar 없이 예시로 먼저 보기
+          </button>
           <details className="kubejs">
             <summary>KubeJS로 더 정확하게 읽기</summary>
             <p className="muted">
@@ -597,6 +621,15 @@ export default function Home() {
             </button>
             <button onClick={() => undo(true)} disabled={!history.current.future.length} title="Ctrl+Shift+Z">
               다시 하기
+            </button>
+            <button
+              onClick={() => {
+                const quests = chapter.quests.map((q) => ({ ...q }));
+                layout(quests);
+                updateChapter(active, { ...chapter, quests });
+              }}
+            >
+              자동 정렬
             </button>
           </div>
           {chapters.length > 1 && (

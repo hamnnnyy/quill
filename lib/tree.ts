@@ -90,11 +90,26 @@ const GAP_Y = 1.5;
 const PER_COLUMN = 6;
 
 // Columns by depth (left to right), rows centered on y = 0. Big depth groups wrap into extra columns.
-export function layout(quests: Quest[], tree: Map<string, Node>) {
-  const depths = [...new Set(quests.map((q) => tree.get(q.key)?.depth ?? 0))].sort((a, b) => a - b);
+// Columns by how many quests come before each one (longest dependency chain), at most PER_COLUMN tall.
+// Also the editor's "tidy up" button, so it follows the deps as edited, not the recipe tree.
+export function layout(quests: Quest[]) {
+  const byId = new Map(quests.map((q) => [q.id, q]));
+  const memo = new Map<string, number>();
+  const depth = (q: Quest, seen: Set<string>): number => {
+    if (memo.has(q.id)) return memo.get(q.id)!;
+    if (seen.has(q.id)) return 0; // a cycle the author drew by hand
+    seen.add(q.id);
+    const parents = q.deps.map((d) => byId.get(d)).filter((p): p is Quest => !!p); // deps in other chapters don't count
+    const d = parents.length ? 1 + Math.max(...parents.map((p) => depth(p, seen))) : 0;
+    seen.delete(q.id);
+    memo.set(q.id, d);
+    return d;
+  };
+  quests.forEach((q) => depth(q, new Set()));
+  const depths = [...new Set(memo.values())].sort((a, b) => a - b);
   let col = 0;
   for (const d of depths) {
-    const group = quests.filter((q) => (tree.get(q.key)?.depth ?? 0) === d);
+    const group = quests.filter((q) => memo.get(q.id) === d);
     for (let start = 0; start < group.length; start += PER_COLUMN, col++) {
       const column = group.slice(start, start + PER_COLUMN);
       column.forEach((q, i) => {
@@ -134,7 +149,7 @@ export function buildChapter(
       rewardCount: t.rewardCount,
     };
   });
-  layout(quests, tree);
+  layout(quests);
   const first = [...quests].sort((a, b) => a.x - b.x)[0];
   return {
     id: newId(),
