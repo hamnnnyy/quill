@@ -1,12 +1,15 @@
 /* Three themes share one structure; each theme only swaps tokens plus a few shape rules below.
-   gui   = Minecraft inventory window (default)
-   quest = FTB Quests book screen
-   book  = enchanted book on parchment */
+   gui   = Minecraft inventory window over a grass and dirt background (default)
+   book  = the Book and Quill screen: cream pages with the red binding
+   quest = FTB Quests map screen
+   Theme art lives in public/theme/ (cut from Minecraft screenshots at their native pixel size). */
 
 :root,
 [data-theme="gui"] {
   --page: #3b2c20;
-  --page-pattern: repeating-conic-gradient(#46352a 0 25%, #3b2c20 0 50%) 0 0 / 16px 16px;
+  /* one row of grass-block sides along the top, darkened dirt below, like Minecraft's menu screens */
+  --page-pattern: url(/theme/grass-side.png) repeat-x 0 0 / 64px 64px, url(/theme/dirt.png) repeat 0 64px / 64px 40px;
+  --attach: scroll;
   --panel: #c6c6c6;
   --panel-hi: #ffffff;
   --panel-lo: #555555;
@@ -27,6 +30,7 @@
 [data-theme="quest"] {
   --page: #11131a;
   --page-pattern: radial-gradient(#262a36 1px, transparent 1px) 0 0 / 24px 24px;
+  --attach: fixed;
   --panel: #1a1d26;
   --panel-hi: #2f3544;
   --panel-lo: #2f3544;
@@ -45,29 +49,32 @@
 }
 
 [data-theme="book"] {
-  --page: #22162e;
-  --page-pattern: radial-gradient(ellipse at 50% 0%, #3c2457 0, transparent 70%);
-  --panel: #efe3c2;
-  --panel-hi: #8a6b3f;
-  --panel-lo: #8a6b3f;
-  --slot: #e2d1a6;
-  --slot-hi: #b89c6a;
-  --slot-lo: #b89c6a;
-  --ink: #3a2814;
-  --muted: #7a6448;
-  --on-page: #f3e6ff;
-  --accent: #a46cff;
-  --bad: #b3261e;
+  --page: #1d140e;
+  --page-pattern: radial-gradient(ellipse at 50% 30%, #3a2618 0, transparent 75%);
+  --attach: fixed;
+  --panel: #fdf6e6;
+  --panel-hi: #6b2f1c;
+  --panel-lo: #6b2f1c;
+  --slot: #f1e6c8;
+  --slot-hi: #c3aa7c;
+  --slot-lo: #c3aa7c;
+  --ink: #111111;
+  --muted: #6d5b45;
+  --on-page: #111111; /* headings are written on the page, not on the dark background */
+  --accent: #c62a1f;
+  --bad: #c62a1f;
   --ok: #3c6e2f;
-  --font-body: "Nanum Myeongjo", serif;
-  --font-head: "Nanum Myeongjo", serif;
-  --body-size: 15px;
+  --font-body: "Galmuri11", "Pretendard Variable", system-ui, sans-serif;
+  --font-head: "Galmuri11 Bold", "Galmuri11", system-ui, sans-serif;
+  --body-size: 13px;
 }
 
 * { box-sizing: border-box; }
-html { background: var(--page-pattern), var(--page); background-attachment: fixed; color: var(--ink); }
+html { background: var(--page-pattern), var(--page); background-attachment: var(--attach, fixed); color: var(--ink); image-rendering: pixelated; }
+img { image-rendering: auto; }
 body { margin: 0; font-family: var(--font-body); font-size: var(--body-size); line-height: 1.6; min-height: 100dvh; }
-main { max-width: 1040px; margin: 0 auto; padding: 48px 16px 96px; }
+main { max-width: 1040px; margin: 0 auto; padding: 48px 16px 180px; } /* bottom room for the hotbar */
+[data-theme="gui"] main { padding-top: 104px; } /* start below the grass row */
 button { font: inherit; color: inherit; cursor: pointer; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .muted { color: var(--muted); }
@@ -76,9 +83,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; color: var(--on-page); }
 h1 { font-family: var(--font-head); font-size: 66px; line-height: 1; margin: 0; font-weight: 800; }
 .lede { margin: 10px 0 0; max-width: 52ch; opacity: 0.85; }
-.themes { display: flex; gap: 6px; }
-.themes button { padding: 6px 14px; border: 2px solid currentColor; background: transparent; color: var(--on-page); opacity: 0.6; }
-.themes button[aria-checked="true"] { opacity: 1; background: var(--on-page); color: var(--page); }
 
 /* panel: the window every block of content sits in */
 .panel { display: block; background: var(--panel); color: var(--ink); padding: 18px; }
@@ -232,7 +236,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 [data-theme="gui"] .slot { box-shadow: inset 2px 2px 0 var(--slot-lo), inset -2px -2px 0 var(--slot-hi); }
 [data-theme="gui"] h1 { text-shadow: 4px 4px 0 #3f3f3f; }
 [data-theme="gui"] .xp { box-shadow: inset 2px 2px 0 var(--slot-lo); background: #1d1d1d; }
-[data-theme="gui"] :is(button.primary, .button-like, .status button, .tabs button, .themes button):hover { background: #7e86c4; color: #fff; }
+[data-theme="gui"] :is(button.primary, .button-like, .status button, .tabs button):hover { background: #7e86c4; color: #fff; }
 [data-theme="gui"] :is(button.primary, .button-like, .status button) {
   background: #6f6f6f; color: #fff; border: 2px solid #000; box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #444; text-shadow: 1px 1px 0 #3f3f3f;
 }
@@ -252,26 +256,101 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 [data-theme="quest"] .arrow { width: 32px; height: 2px; clip-path: none; background: var(--slot-hi); }
 [data-theme="quest"] :is(button.primary, .button-like, .status button) { background: var(--accent); color: #11131a; border-radius: 6px; }
 [data-theme="quest"] :is(input:not([type]), input[type="number"], input[type="password"], select, textarea, .chip) { border-radius: 6px; border: 1px solid var(--slot-hi); }
-[data-theme="quest"] .tabs button, [data-theme="quest"] .themes button { border-radius: 6px; }
+[data-theme="quest"] .tabs button { border-radius: 6px; }
 [data-theme="quest"] .map { background: var(--page-pattern), #0d0f14; }
 [data-theme="quest"] .xp { border-radius: 5px; overflow: hidden; }
 [data-theme="quest"] .count { text-shadow: 0 0 3px #000, 0 0 3px #000; }
 
-/* ---- book: parchment pages, the crafted result glints like an enchanted item ---- */
-[data-theme="book"] .panel { border: 4px double var(--panel-hi); border-radius: 3px; box-shadow: 0 10px 30px #0006; }
-[data-theme="book"] .slot { border: 1px solid var(--slot-hi); border-radius: 4px; }
-[data-theme="book"] .slot.big {
-  border-color: var(--accent);
-  background: linear-gradient(115deg, var(--slot) 30%, #d9b8ff 45%, var(--slot) 60%) 0 0 / 300% 100%;
-  animation: glint 3.5s linear infinite;
+/* ---- book: the whole page is one Book and Quill page, and everything is written on it ---- */
+[data-theme="book"] main {
+  max-width: 980px; margin: 32px auto 0; padding: 40px 72px 72px 60px; position: relative;
+  border-style: solid;
+  border-width: 24px 60px 64px 44px; /* the page art at 2x, so the binding rings read like in game */
+  /* edges repeat (the binding rings), the paper in the middle stretches so it has no seams */
+  border-image: url(/theme/page.png) 12 30 32 22 / 24px 60px 64px 44px round;
+  background: url(/theme/page-fill.png) 0 0 / 100% 100% padding-box;
+  filter: drop-shadow(0 18px 40px #000a);
+  image-rendering: auto; /* the paper is stretched a lot; pixelated scaling turns it into stripes */
 }
-[data-theme="book"] h1 { font-style: italic; letter-spacing: -0.02em; text-shadow: 0 0 24px var(--accent); }
-[data-theme="book"] :is(button.primary, .button-like, .status button) { border-radius: 3px; }
-[data-theme="book"] :is(input:not([type]), input[type="number"], input[type="password"], select, textarea) { border: 1px solid var(--slot-hi); border-radius: 3px; }
-[data-theme="book"] .map-lines line { stroke: #b89c6a; }
-[data-theme="book"] .xp { border-radius: 5px; overflow: hidden; }
-@keyframes glint { from { background-position: 100% 0; } to { background-position: -50% 0; } }
-@media (prefers-reduced-motion: reduce) { [data-theme="book"] .slot.big { animation: none; } }
+[data-theme="book"] body { padding-bottom: 150px; } /* room for the hotbar below the book */
+/* the page counter in the top right of the book screen */
+[data-theme="book"] main::before {
+  content: "Page 1 of 1"; position: absolute; top: 4px; right: 8px;
+  font-family: "Galmuri11", system-ui, sans-serif; font-size: 13px; color: var(--ink);
+}
+/* blinking cursor after the last line, like an unsigned book */
+[data-theme="book"] main::after {
+  content: "_"; display: block; margin-top: 8px; font-family: "Galmuri11", system-ui, sans-serif; animation: cursor 1s steps(1) infinite;
+}
+@keyframes cursor { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { [data-theme="book"] main::after { animation: none; } }
+
+/* panels dissolve into plain writing on the page */
+[data-theme="book"] .panel { background: none; padding: 0; border: 0; box-shadow: none; }
+[data-theme="book"] section { margin-top: 32px; }
+[data-theme="book"] :is(.status, .found, .activity) { padding: 10px 0; border-block: 2px dashed var(--slot-hi); }
+[data-theme="book"] .drop { padding: 12px 0; }
+[data-theme="book"] .mod summary.panel { padding: 6px 0; border-bottom: 1px dashed var(--slot-hi); }
+[data-theme="book"] .recipes { gap: 20px 28px; }
+[data-theme="book"] .recipe { padding-bottom: 12px; border-bottom: 1px dashed var(--slot-hi); }
+[data-theme="book"] h1 { color: var(--ink); text-shadow: none; }
+[data-theme="book"] .step { color: var(--ink); }
+[data-theme="book"] .slot { background: var(--slot); box-shadow: inset 1px 1px 0 var(--slot-hi), inset -1px -1px 0 #fff8; }
+[data-theme="book"] .slot.big { box-shadow: 0 0 0 2px var(--accent); }
+[data-theme="book"] :is(button.primary, .button-like, .status button, .tabs button) {
+  background: #6f6f6f; color: #fff; border: 2px solid #000; border-radius: 0;
+  box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #444; text-shadow: 1px 1px 0 #3f3f3f;
+}
+[data-theme="book"] :is(button.primary, .button-like, .status button, .tabs button):hover { background: #7e86c4; }
+[data-theme="book"] .tabs button[aria-selected="true"] { background: #a0a0a0; }
+[data-theme="book"] :is(input:not([type]), input[type="number"], input[type="password"], select, textarea) {
+  background: transparent; border: 0; border-bottom: 2px solid var(--slot-hi); padding-inline: 0;
+}
+[data-theme="book"] .map { background: none; border: 1px dashed var(--slot-hi); }
+[data-theme="book"] .editor { padding-left: 16px; border-left: 2px dashed var(--slot-hi); }
+[data-theme="book"] .map-lines line { stroke: #b49a6c; }
+[data-theme="book"] .map-lines line.hot { stroke: var(--accent); }
+[data-theme="book"] .xp { background: #e4d6b2; }
+@media (max-width: 600px) {
+  [data-theme="book"] main { margin-top: 12px; padding: 28px 8px 48px 4px; border-width: 12px 30px 32px 22px; border-image-width: 12px 30px 32px 22px; }
+}
+
+/* ---- HUD: hearts, hunger, XP and the hotbar, fixed at the bottom like in game ---- */
+.hud {
+  --px: 2px; /* one Minecraft GUI pixel */
+  position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 10;
+  display: flex; flex-direction: column; align-items: center; image-rendering: pixelated;
+}
+.hud-label {
+  font-family: "Galmuri11", system-ui, sans-serif; font-size: 14px; color: #fff; text-shadow: 2px 2px 0 #3f3f3f;
+  margin-bottom: 6px; min-height: 1.2em; opacity: 0; transition: opacity 0.4s;
+}
+.hud-label.show { opacity: 1; transition: none; }
+.hud-top { position: relative; width: calc(185 * var(--px)); height: calc(16 * var(--px)); background: url(/theme/hud.png) 0 0 / 100% 100%; }
+/* the XP bar's inner track, filled while Quill works */
+.hud-xp {
+  position: absolute; left: calc(3 * var(--px)); top: calc(12 * var(--px)); height: calc(3 * var(--px));
+  max-width: calc(179 * var(--px)); background: #80ff20; box-shadow: 0 calc(-1 * var(--px)) 0 #b6ff71 inset;
+  transition: width 0.4s steps(8);
+}
+.hotbar {
+  display: flex; margin-top: var(--px); padding-right: var(--px);
+  background: linear-gradient(#000, #000) right / var(--px) 100% no-repeat; /* the last slot's right edge */
+}
+.hotbar-slot {
+  position: relative; width: calc(20 * var(--px)); height: calc(21 * var(--px)); padding: 0; border: 0;
+  background: url(/theme/slot.png) 0 0 / 100% 100%, rgb(139 139 139 / 0.92); /* opaque enough that the page doesn't show through */
+  display: grid; place-items: center;
+}
+button.hotbar-slot { cursor: pointer; }
+.hotbar-slot img { width: calc(16 * var(--px)); height: calc(16 * var(--px)); margin: var(--px) 0 0 var(--px); image-rendering: pixelated; pointer-events: none; }
+.hotbar-slot img[src$="grass.png"] { image-rendering: auto; }
+.hotbar-slot[aria-checked="true"]::after {
+  content: ""; position: absolute; left: calc(-2 * var(--px)); top: calc(-1 * var(--px));
+  width: calc(24 * var(--px)); height: calc(23 * var(--px)); background: url(/theme/selected.png) 0 0 / 100% 100%;
+}
+.hotbar-slot:focus-visible { outline: 2px solid #fff; outline-offset: 2px; z-index: 1; }
+@media (max-width: 400px) { .hud { --px: 1.75px; image-rendering: auto; } }
 
 @media (max-width: 760px) {
   .map-wrap { grid-template-columns: 1fr; }

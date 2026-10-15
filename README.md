@@ -56,11 +56,21 @@ zip을 받아 인스턴스 폴더에 풀면 `config/ftbquests/quests/` 안에 �
 
 ## 테마
 
-화면 오른쪽 위에서 고를 수 있습니다.
+화면 아래의 핫바에서 아이템을 누르거나 숫자 키 1~3을 눌러 바꿉니다. 게임처럼 바꾼 테마 이름이 핫바 위에 잠깐 뜨고, Quill이 작업하는 동안에는 경험치 바가 차오릅니다.
 
-| 마인크래프트 GUI | FTB 퀘스트 맵 | 인챈트 책 |
+![핫바](docs/screenshots/hotbar-gui.png)
+
+| 슬롯 | 테마 |
+|---|---|
+| 1. 잔디 블록 | **마인크래프트 GUI**: 위에 잔디, 아래에 흙이 깔린 배경 위에 회색 인벤토리 창 |
+| 2. 책 | **책과 깃펜**: 화면 전체가 책과 깃펜의 한 페이지이고, 모든 내용을 그 위에 쓴 것처럼 보입니다 |
+| 3. 지도 | **FTB 퀘스트 맵**: 어두운 퀘스트북 화면에 원형 퀘스트 노드 |
+
+![책과 깃펜 테마](docs/screenshots/hero-book.png)
+
+| 마인크래프트 GUI | 책과 깃펜 | FTB 퀘스트 맵 |
 |---|---|---|
-| ![GUI 테마](docs/screenshots/map-gui.png) | ![퀘스트 테마](docs/screenshots/map-quest.png) | ![책 테마](docs/screenshots/map-book.png) |
+| ![GUI 테마](docs/screenshots/map-gui.png) | ![책 테마](docs/screenshots/map-book.png) | ![퀘스트 테마](docs/screenshots/map-quest.png) |
 
 ## 지원 범위
 
@@ -127,5 +137,6 @@ Next.js 16, React 19, [fflate](https://github.com/101arrowz/fflate), Google Gemi
 - 바닐라 아이콘: [PrismarineJS/minecraft-assets](https://github.com/PrismarineJS/minecraft-assets)
 - 바닐라 한국어 이름: [InventivetalentDev/minecraft-assets](https://github.com/InventivetalentDev/minecraft-assets)
 - 두 자료 모두 실행할 때 불러오고 저장소에는 넣지 않습니다. 마인크래프트 리소스의 권리는 Mojang에 있습니다.
+- 테마 그림(`public/theme/`): 핫바, 잔디 블록, 흙, 책, 책과 깃펜 화면을 마인크래프트 원래 픽셀 크기로 잘라 만들었습니다. 지도 아이콘은 직접 그렸습니다.
 - 픽셀 글꼴: [갈무리](https://github.com/quiple/galmuri)
 - Quill은 Mojang, FTB, KubeJS와 관계없는 비공식 도구입니다.

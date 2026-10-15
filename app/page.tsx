@@ -11,14 +11,9 @@ import { buildTree, newId } from "@/lib/tree";
 import type { Chapter, Recipe, Settings } from "@/lib/types";
 import { vanillaIcons, vanillaNames } from "@/lib/vanilla";
 import { Activity, MapSkeleton, type ActivityState, type Job } from "./components/Activity";
+import { Hotbar } from "./components/Hotbar";
 import { QuestMap } from "./components/QuestMap";
 import { bare, Slot, type Lookup } from "./components/Slot";
-
-const THEMES = [
-  { id: "gui", label: "GUI" },
-  { id: "quest", label: "퀘스트" },
-  { id: "book", label: "책" },
-] as const;
 
 const DEFAULT_SETTINGS: Settings = { version: "1.20.1", lang: "ko", maxQuests: 25, reward: "normal" };
 
@@ -279,6 +274,9 @@ export default function Home() {
   }
 
   const recipeCount = Object.values(recipes).reduce((n, r) => n + r.length, 0);
+  const xp = activity?.jobs.length
+    ? activity.jobs.filter((j) => j.state !== "wait" && j.state !== "run").length / activity.jobs.length
+    : 0;
   const chapter = chapters[active];
   const chapterMod = chapter && modOfChapter(chapter);
   const addable = chapter && chapterMod
@@ -289,18 +287,12 @@ export default function Home() {
     : [];
 
   return (
+    <>
     <main>
       <header>
         <div>
           <h1>Quill</h1>
           <p className="lede">모드 jar를 넣으면 레시피를 읽어서 FTB 퀘스트 챕터를 만들어 줘요.</p>
-        </div>
-        <div className="themes" role="radiogroup" aria-label="테마">
-          {THEMES.map((t) => (
-            <button key={t.id} role="radio" aria-checked={theme === t.id} onClick={() => pickTheme(t.id)}>
-              {t.label}
-            </button>
-          ))}
         </div>
       </header>
 
@@ -558,5 +550,8 @@ export default function Home() {
         </section>
       )}
     </main>
+    {/* outside <main>: the book theme's drop-shadow filter would otherwise trap position: fixed */}
+    <Hotbar theme={theme} onPick={pickTheme} progress={xp} />
+    </>
   );
 }
