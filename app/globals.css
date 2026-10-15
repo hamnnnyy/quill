@@ -1,0 +1,283 @@
+/* Three themes share one structure; each theme only swaps tokens plus a few shape rules below.
+   gui   = Minecraft inventory window (default)
+   quest = FTB Quests book screen
+   book  = enchanted book on parchment */
+
+:root,
+[data-theme="gui"] {
+  --page: #3b2c20;
+  --page-pattern: repeating-conic-gradient(#46352a 0 25%, #3b2c20 0 50%) 0 0 / 16px 16px;
+  --panel: #c6c6c6;
+  --panel-hi: #ffffff;
+  --panel-lo: #555555;
+  --slot: #8b8b8b;
+  --slot-hi: #ffffff;
+  --slot-lo: #373737;
+  --ink: #3f3f3f;
+  --muted: #5e5e5e;
+  --on-page: #ffffff;
+  --accent: #80ff20;
+  --bad: #ff5555;
+  --ok: #2e7d32;
+  --font-body: "Galmuri11", "Pretendard Variable", system-ui, sans-serif;
+  --font-head: "Galmuri11 Bold", "Galmuri11", system-ui, sans-serif;
+  --body-size: 13px;
+}
+
+[data-theme="quest"] {
+  --page: #11131a;
+  --page-pattern: radial-gradient(#262a36 1px, transparent 1px) 0 0 / 24px 24px;
+  --panel: #1a1d26;
+  --panel-hi: #2f3544;
+  --panel-lo: #2f3544;
+  --slot: #232835;
+  --slot-hi: #3a4256;
+  --slot-lo: #3a4256;
+  --ink: #e9e9ec;
+  --muted: #8e94a4;
+  --on-page: #e9e9ec;
+  --accent: #f0b429;
+  --bad: #ff6b6b;
+  --ok: #5fd38d;
+  --font-body: "Pretendard Variable", system-ui, sans-serif;
+  --font-head: "Galmuri11 Bold", system-ui, sans-serif;
+  --body-size: 14px;
+}
+
+[data-theme="book"] {
+  --page: #22162e;
+  --page-pattern: radial-gradient(ellipse at 50% 0%, #3c2457 0, transparent 70%);
+  --panel: #efe3c2;
+  --panel-hi: #8a6b3f;
+  --panel-lo: #8a6b3f;
+  --slot: #e2d1a6;
+  --slot-hi: #b89c6a;
+  --slot-lo: #b89c6a;
+  --ink: #3a2814;
+  --muted: #7a6448;
+  --on-page: #f3e6ff;
+  --accent: #a46cff;
+  --bad: #b3261e;
+  --ok: #3c6e2f;
+  --font-body: "Nanum Myeongjo", serif;
+  --font-head: "Nanum Myeongjo", serif;
+  --body-size: 15px;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--page-pattern), var(--page); background-attachment: fixed; color: var(--ink); }
+body { margin: 0; font-family: var(--font-body); font-size: var(--body-size); line-height: 1.6; min-height: 100dvh; }
+main { max-width: 1040px; margin: 0 auto; padding: 48px 16px 96px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.muted { color: var(--muted); }
+
+/* header */
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; color: var(--on-page); }
+h1 { font-family: var(--font-head); font-size: 66px; line-height: 1; margin: 0; font-weight: 800; }
+.lede { margin: 10px 0 0; max-width: 52ch; opacity: 0.85; }
+.themes { display: flex; gap: 6px; }
+.themes button { padding: 6px 14px; border: 2px solid currentColor; background: transparent; color: var(--on-page); opacity: 0.6; }
+.themes button[aria-checked="true"] { opacity: 1; background: var(--on-page); color: var(--page); }
+
+/* panel: the window every block of content sits in */
+.panel { display: block; background: var(--panel); color: var(--ink); padding: 18px; }
+
+/* slot: one inventory cell */
+.slot {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; flex: none; background: var(--slot); overflow: hidden;
+}
+.slot.big { width: 60px; height: 60px; }
+.slot img { width: 80%; height: 80%; object-fit: contain; image-rendering: pixelated; }
+.slot-text {
+  font-size: 10px; line-height: 1.15; text-align: center; padding: 2px; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.slot.tag .slot-text::before { content: "#"; opacity: 0.6; }
+.slot.bad { outline: 2px solid var(--bad); outline-offset: -2px; }
+.count {
+  position: absolute; right: 2px; bottom: 0; font-family: "Galmuri11 Bold", var(--font-head);
+  font-size: 12px; color: #fff; text-shadow: 1px 1px 0 #3f3f3f, 2px 2px 0 #3f3f3f;
+}
+
+/* drop zone */
+.drop { position: relative; display: flex; flex-direction: row; align-items: center; gap: 18px; cursor: pointer; }
+.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.drop b { display: block; font-family: var(--font-head); font-size: 1.1em; }
+.drop .muted { display: block; }
+.drop-slot { font-family: var(--font-head); color: var(--muted); }
+.drop.busy { cursor: progress; }
+
+.xp { height: 10px; margin: 12px 0 6px; background: var(--slot); }
+.xp span { display: block; height: 100%; background: var(--accent); transition: width 0.3s; }
+
+/* recipes */
+.recipes { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin: 12px 0 24px; }
+.recipe h3 { font-family: var(--font-head); font-size: 1.1em; margin: 0 0 12px; font-weight: 700; }
+.recipe p { font-size: 0.85em; margin: 12px 0 0; }
+.craft { display: flex; align-items: center; gap: 14px; }
+.grid { display: flex; flex-wrap: wrap; gap: 4px; max-width: 152px; }
+.arrow { flex: none; width: 22px; height: 16px; background: var(--muted); clip-path: polygon(0 35%, 55% 35%, 55% 0, 100% 50%, 55% 100%, 55% 65%, 0 65%); }
+
+/* steps */
+section { margin-top: 40px; }
+.step { font-family: var(--font-head); font-size: 22px; margin: 0 0 12px; color: var(--on-page); font-weight: 700; }
+section > .muted { color: var(--on-page); opacity: 0.75; margin: -4px 0 12px; }
+code { font-family: ui-monospace, monospace; font-size: 0.9em; }
+a { color: inherit; }
+
+/* forms */
+.form { display: flex; flex-direction: column; gap: 18px; }
+.row { display: flex; flex-wrap: wrap; gap: 16px; }
+.row > label { flex: 1 1 180px; }
+label { display: flex; flex-direction: column; gap: 6px; }
+.label { font-size: 0.85em; font-weight: 700; color: var(--muted); }
+.hint { font-size: 0.85em; }
+fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+input:not([type]), input[type="number"], input[type="password"], select, textarea {
+  font: inherit; color: var(--ink); background: var(--slot); border: 0; padding: 8px 10px; width: 100%;
+}
+input[type="range"] { accent-color: var(--accent); }
+textarea { resize: vertical; }
+.check { flex-direction: row; align-items: center; gap: 8px; cursor: pointer; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.chips select { width: auto; }
+button.primary, .button-like, .status button, .danger {
+  align-self: flex-start; padding: 10px 18px; border: 0; background: var(--ink); color: var(--panel); font-weight: 700;
+}
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.button-like { position: relative; display: inline-block; cursor: pointer; text-decoration: none; }
+.button-like input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.danger { background: var(--bad); color: #fff; }
+.link { background: none; border: 0; padding: 0; text-decoration: underline; color: var(--muted); }
+.chip { border: 0; padding: 4px 10px; background: var(--slot); font-size: 0.85em; }
+
+.alt-inputs { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; margin-top: 12px; color: var(--on-page); }
+.kubejs { flex: 1 1 320px; }
+.kubejs summary { cursor: pointer; padding: 10px 0; font-weight: 700; }
+.kubejs p { color: var(--on-page); opacity: 0.8; max-width: 70ch; }
+
+.status { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.status p { margin: 0; }
+.status-step { font-weight: 700; }
+
+/* activity: what Quill is doing right now */
+.activity { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+.activity .xp { margin: 0; }
+.activity p { margin: 0; font-size: 0.85em; color: var(--muted); }
+.activity-head { display: flex; align-items: center; gap: 10px; }
+.activity-time { margin-left: auto; font-variant-numeric: tabular-nums; }
+.jobs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow: auto; }
+.job { display: grid; grid-template-columns: 20px minmax(0, max-content) 1fr; gap: 10px; align-items: center; font-size: 0.9em; }
+.job-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.job-detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.job-glyph { text-align: center; font-weight: 700; }
+.job.wait { opacity: 0.55; }
+.job.run .job-name { font-weight: 700; }
+.job.done .job-glyph { color: var(--ok); }
+.job.plain .job-glyph { color: var(--accent); }
+.job.fail .job-glyph { color: var(--bad); }
+.spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--muted); border-right-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; }
+/* three nib strokes, written one after another */
+.quill-mark { display: inline-flex; gap: 3px; align-items: flex-end; height: 14px; }
+.quill-mark i { width: 4px; height: 4px; background: var(--ink); animation: write 1.2s steps(1) infinite; }
+.quill-mark i:nth-child(2) { animation-delay: 0.2s; }
+.quill-mark i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes write { 0% { height: 4px; } 33% { height: 14px; } 66% { height: 8px; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.skeleton .map-canvas { min-height: 320px; }
+.slot.ghost { position: absolute; transform: translate(-50%, 0); animation: ghost 1.6s ease-in-out infinite both; }
+@keyframes ghost { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.7; } }
+
+.found { margin-top: 16px; }
+.found ul { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner, .quill-mark i, .slot.ghost { animation: none; }
+  .slot.ghost { opacity: 0.4; }
+}
+
+/* per-mod recipe lists */
+.mod { margin-bottom: 8px; }
+.mod summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; padding: 12px 18px; }
+
+/* chapter tabs */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tabs button { padding: 6px 14px; border: 2px solid var(--on-page); background: transparent; color: var(--on-page); }
+.tabs button[aria-selected="true"] { background: var(--on-page); color: var(--page); }
+.tabs button[aria-selected="true"] .muted { color: inherit; }
+
+/* quest map */
+.map-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+.map { overflow: auto; max-height: 70vh; padding: 0; }
+.map-canvas { position: relative; min-width: 100%; }
+.map-lines { position: absolute; inset: 0; overflow: visible; }
+.map-lines line { stroke: var(--muted); stroke-width: 2; }
+.map-lines line.hot { stroke: var(--accent); stroke-width: 3; }
+.node {
+  position: absolute; transform: translate(-50%, -22px); display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: none; border: 0; padding: 0; touch-action: none; cursor: grab; width: 96px;
+}
+.node:active { cursor: grabbing; }
+.node-title { font-size: 11px; line-height: 1.2; text-align: center; max-width: 96px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.node.selected .slot { outline: 3px solid var(--accent); outline-offset: 1px; }
+.editor { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 16px; }
+.editor p { margin: 0; }
+.reward { display: flex; align-items: center; gap: 10px; }
+
+/* ---- gui: bevelled grey window, sunken slots ---- */
+[data-theme="gui"] .panel { border: 2px solid #000; box-shadow: inset 3px 3px 0 var(--panel-hi), inset -3px -3px 0 var(--panel-lo); }
+[data-theme="gui"] .slot { box-shadow: inset 2px 2px 0 var(--slot-lo), inset -2px -2px 0 var(--slot-hi); }
+[data-theme="gui"] h1 { text-shadow: 4px 4px 0 #3f3f3f; }
+[data-theme="gui"] .xp { box-shadow: inset 2px 2px 0 var(--slot-lo); background: #1d1d1d; }
+[data-theme="gui"] :is(button.primary, .button-like, .status button, .tabs button, .themes button):hover { background: #7e86c4; color: #fff; }
+[data-theme="gui"] :is(button.primary, .button-like, .status button) {
+  background: #6f6f6f; color: #fff; border: 2px solid #000; box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #444; text-shadow: 1px 1px 0 #3f3f3f;
+}
+[data-theme="gui"] :is(input:not([type]), input[type="number"], input[type="password"], select, textarea) {
+  background: #000; color: #e0e0e0; border: 2px solid #a0a0a0;
+}
+[data-theme="gui"] .map { background: #8b8b8b; box-shadow: inset 3px 3px 0 #373737, inset -3px -3px 0 #fff; }
+[data-theme="gui"] .map-lines line { stroke: #3f3f3f; }
+[data-theme="gui"] .spinner { border-radius: 0; border-width: 3px; animation-timing-function: steps(4); }
+[data-theme="gui"] .node-title { color: #fff; text-shadow: 1px 1px 0 #3f3f3f; }
+
+/* ---- quest: dark map, round quest nodes linked by a line ---- */
+[data-theme="quest"] .panel { border: 1px solid var(--panel-hi); border-radius: 10px; }
+[data-theme="quest"] .slot { border-radius: 50%; box-shadow: 0 0 0 2px var(--slot-hi); }
+[data-theme="quest"] .slot.big { box-shadow: 0 0 0 3px var(--accent); }
+[data-theme="quest"] .grid { gap: 8px; padding: 2px; }
+[data-theme="quest"] .arrow { width: 32px; height: 2px; clip-path: none; background: var(--slot-hi); }
+[data-theme="quest"] :is(button.primary, .button-like, .status button) { background: var(--accent); color: #11131a; border-radius: 6px; }
+[data-theme="quest"] :is(input:not([type]), input[type="number"], input[type="password"], select, textarea, .chip) { border-radius: 6px; border: 1px solid var(--slot-hi); }
+[data-theme="quest"] .tabs button, [data-theme="quest"] .themes button { border-radius: 6px; }
+[data-theme="quest"] .map { background: var(--page-pattern), #0d0f14; }
+[data-theme="quest"] .xp { border-radius: 5px; overflow: hidden; }
+[data-theme="quest"] .count { text-shadow: 0 0 3px #000, 0 0 3px #000; }
+
+/* ---- book: parchment pages, the crafted result glints like an enchanted item ---- */
+[data-theme="book"] .panel { border: 4px double var(--panel-hi); border-radius: 3px; box-shadow: 0 10px 30px #0006; }
+[data-theme="book"] .slot { border: 1px solid var(--slot-hi); border-radius: 4px; }
+[data-theme="book"] .slot.big {
+  border-color: var(--accent);
+  background: linear-gradient(115deg, var(--slot) 30%, #d9b8ff 45%, var(--slot) 60%) 0 0 / 300% 100%;
+  animation: glint 3.5s linear infinite;
+}
+[data-theme="book"] h1 { font-style: italic; letter-spacing: -0.02em; text-shadow: 0 0 24px var(--accent); }
+[data-theme="book"] :is(button.primary, .button-like, .status button) { border-radius: 3px; }
+[data-theme="book"] :is(input:not([type]), input[type="number"], input[type="password"], select, textarea) { border: 1px solid var(--slot-hi); border-radius: 3px; }
+[data-theme="book"] .map-lines line { stroke: #b89c6a; }
+[data-theme="book"] .xp { border-radius: 5px; overflow: hidden; }
+@keyframes glint { from { background-position: 100% 0; } to { background-position: -50% 0; } }
+@media (prefers-reduced-motion: reduce) { [data-theme="book"] .slot.big { animation: none; } }
+
+@media (max-width: 760px) {
+  .map-wrap { grid-template-columns: 1fr; }
+  .editor { position: static; }
+}
+@media (max-width: 600px) {
+  h1 { font-size: 48px; }
+  .drop { flex-direction: column; text-align: center; }
+}
