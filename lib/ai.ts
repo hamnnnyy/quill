@@ -15,11 +15,17 @@ export class AiError extends Error {
 // and only these fixed hosts are called: the server never fetches a URL a visitor typed.
 export const PROVIDERS = {
   gemini: { label: "Google Gemini", base: "", models: TEXT_MODELS },
-  // free models as listed on openrouter.ai/api/v1/models (Oct 2026); first that answers wins
+  // Free models, best Korean quest text first (compared on the TACZ sample, Oct 2026).
+  // Gemma's free pool was rate-limited upstream on every try, so it's last.
   openrouter: {
     label: "OpenRouter",
     base: "https://openrouter.ai/api/v1",
-    models: ["google/gemma-4-31b-it:free", "nvidia/nemotron-3-super-120b-a12b:free", "google/gemma-4-26b-a4b-it:free"],
+    models: [
+      "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "nvidia/nemotron-3.5-super-vl:free",
+      "nvidia/nemotron-3-super-120b-a12b:free",
+      "google/gemma-4-31b-it:free",
+    ],
   },
   // GLM-4.7-Flash is in Zhipu's free model list (docs.bigmodel.cn)
   zhipu: { label: "Zhipu GLM", base: "https://open.bigmodel.cn/api/paas/v4", models: ["glm-4.7-flash"] },
@@ -107,7 +113,7 @@ async function openaiCompatible(c: Creds, prompt: string, schema: Record<string,
         last = new AiError("AI 답을 읽지 못했어요. 다른 모델로 해 보세요.", 502);
         break; // the model answered but not in JSON: next model
       }
-      if (res.status === 401 || res.status === 403) throw new AiError(`${PROVIDERS[c.provider].label} API 키가 맞지 않아요. 키를 확인하세요.`, 401);
+      if (res.status === 401) throw new AiError(`${PROVIDERS[c.provider].label} API 키가 맞지 않아요. 키를 확인하세요.`, 401);
       if (res.status === 402) throw new AiError(`${PROVIDERS[c.provider].label} 크레딧이 없어요. 무료 모델을 쓰거나 크레딧을 충전하세요.`, 402);
       if (res.status === 429 && /per-day|per day|daily/i.test(body))
         throw new AiError(`오늘 쓸 수 있는 ${PROVIDERS[c.provider].label} 무료 횟수를 다 썼어요. 내일 다시 하거나 AI 없이 만들 수 있어요.`, 402);
@@ -115,7 +121,7 @@ async function openaiCompatible(c: Creds, prompt: string, schema: Record<string,
       last =
         res.status === 429
           ? new AiError("AI 사용 한도를 넘었어요. 잠시 후 다시 시도하세요.", 429)
-          : new AiError(`AI가 답하지 않았어요 (${model}, ${res.status}).`, 503);
+          : new AiError(`AI가 답하지 않았어요 (${model}, ${res.status}). 다른 모델로 해 보세요.`, 503); // 403: model closed to plain API use
       break; // busy, gone or failing: next model
     }
   }

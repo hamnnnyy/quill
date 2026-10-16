@@ -32,9 +32,9 @@ const AI_PROVIDERS: Record<string, { label: string; placeholder: string; model: 
   openrouter: {
     label: "OpenRouter",
     placeholder: "sk-or-…",
-    model: "google/gemma-4-31b-it:free",
+    model: "nvidia/nemotron-3-ultra-550b-a55b:free",
     keyUrl: "https://openrouter.ai/settings/keys",
-    note: "이름이 :free로 끝나는 모델은 무료예요. 하루 50번, 10달러를 한 번 충전한 계정은 1,000번까지예요.",
+    note: "이름이 :free로 끝나는 모델은 무료예요. 하루 50번, 10달러를 한 번 충전한 계정은 1,000번까지예요. 무료 모델은 챕터 하나에 1분쯤 걸려요.",
   },
   zhipu: {
     label: "Zhipu GLM",
