@@ -102,6 +102,7 @@ export async function chapterForMod(
     lang: settings.lang,
     maxQuests: settings.maxQuests,
     reward: settings.reward,
+    style: settings.style,
     candidates: nodes.map((n) => ({
       key: n.key,
       name: label(n.key),

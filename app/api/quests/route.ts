@@ -1,5 +1,5 @@
 import { AiError, generateJson, handle } from "@/lib/ai";
-import { languageOf, SUBTITLE_RULES } from "@/lib/prompts";
+import { descriptionRules, languageOf, SUBTITLE_RULES } from "@/lib/prompts";
 
 export const maxDuration = 300;
 
@@ -8,6 +8,7 @@ export type QuestsRequest = {
   lang: "ko" | "en";
   maxQuests: number;
   reward: "low" | "normal" | "high";
+  style: string;
   candidates: { key: string; name: string; depth: number; madeFrom: string[]; station: string }[];
   rewardPool: { id: string; name: string }[];
 };
@@ -60,10 +61,7 @@ Write like a game, not a manual. Players skim; the first line has to make them w
 For each picked quest write, in ${language}:
 - title: short, names the item or the goal
 ${SUBTITLE_RULES}
-- description: rotate the voice from quest to quest, never two in a row the same:
-  story (a scrap of lore, someone who used it), direct challenge to the player, dry humor, plain field tip.
-  Vary the length too: some quests get one line, some three. Not every quest needs a how-to line;
-  when there is one, keep it short and last.
+${descriptionRules(r.style)}
   Keep a thread through the chapter: early quests feel like a beginning, the deepest ones like a payoff.
 - xp: ${XP[r.reward] ?? XP.normal}, more for deeper items
 - reward_item/reward_count: optionally a useful material from reward_pool for the next step, else "" and 0

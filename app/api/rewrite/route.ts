@@ -1,5 +1,5 @@
 import { AiError, generateJson, handle } from "@/lib/ai";
-import { languageOf, SUBTITLE_RULES } from "@/lib/prompts";
+import { descriptionRules, languageOf, SUBTITLE_RULES } from "@/lib/prompts";
 
 export const maxDuration = 60;
 
@@ -11,6 +11,7 @@ export type RewriteRequest = {
   current: { title: string; subtitle: string; description: string[] };
   chapter: string[]; // other quest titles, for tone and to avoid repeats
   ask: string; // what the user wants changed, may be empty
+  style: string;
 };
 export type RewriteResponse = { title: string; subtitle: string; description: string[] };
 
@@ -33,7 +34,7 @@ ${r.goal ? `The quest asks the player to: ${r.goal}.` : `The quest asks the play
 Write like a game, not a manual.
 - title: short, names the item or the goal
 ${SUBTITLE_RULES}
-- description: 1-3 short lines; a scrap of story, a challenge, dry humor or a field tip. A how-to line, if any, goes last.
+${r.style === "mixed" || !r.style ? "- description: 1-3 short lines; a scrap of story, a challenge, dry humor or a field tip. A how-to line, if any, goes last." : descriptionRules(r.style)}
 Make it clearly different from the current version, and don't echo lines from other quests in the chapter.
 ${r.ask ? `The author asks: ${r.ask.slice(0, 300)}` : ""}
 

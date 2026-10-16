@@ -53,6 +53,9 @@ export type Chapter = {
   quests: Quest[];
 };
 
+// How quest descriptions read. The hook line under the title is the same in every style.
+export type DescStyle = "mixed" | "story" | "guide" | "humor";
+
 export type McVersion = "1.20.1" | "1.21.1";
 
 export type Settings = {
@@ -60,4 +63,5 @@ export type Settings = {
   lang: "ko" | "en";
   maxQuests: number;
   reward: "low" | "normal" | "high";
+  style: DescStyle;
 };

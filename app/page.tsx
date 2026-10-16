@@ -45,7 +45,7 @@ const AI_PROVIDERS: Record<string, { label: string; placeholder: string; model: 
   },
 };
 
-const DEFAULT_SETTINGS: Settings = { version: "1.20.1", lang: "ko", maxQuests: 25, reward: "normal" };
+const DEFAULT_SETTINGS: Settings = { version: "1.20.1", lang: "ko", maxQuests: 25, reward: "normal", style: "mixed" };
 
 // "minecraft:iron_ingot" -> "iron ingot", "#forge:ingots/iron" -> "iron"
 const fallbackName = (id: string) => bare(id).split(/[:/]/).pop()!.replaceAll("_", " ");
@@ -423,6 +423,7 @@ export default function Home() {
         current: { title: q.title, subtitle: q.subtitle ?? "", description: q.description },
         chapter: c.quests.filter((x) => x.id !== q.id).map((x) => [x.title, x.subtitle].filter(Boolean).join(": ")),
         ask,
+        style: settings.style,
       },
       ai,
     );
@@ -627,6 +628,15 @@ export default function Home() {
                   <option value="low">적게</option>
                   <option value="normal">보통</option>
                   <option value="high">넉넉하게</option>
+                </select>
+              </label>
+              <label>
+                <span className="label">설명 스타일</span>
+                <select value={settings.style} onChange={(e) => changeSettings({ style: e.target.value as Settings["style"] })}>
+                  <option value="mixed">섞어서 (이야기, 도전, 농담, 팁)</option>
+                  <option value="story">서사적 (챕터 하나가 한 이야기)</option>
+                  <option value="guide">설명 (용도와 만드는 법)</option>
+                  <option value="humor">유머</option>
                 </select>
               </label>
             </div>
